@@ -1,89 +1,216 @@
 import React, { useState } from "react";
-import { Mail, Lock, Eye, EyeOff, Globe } from "lucide-react";
+import {
+  FaEnvelope,
+  FaLock,
+  FaEye,
+  FaEyeSlash,
+  FaGoogle,
+  FaUser,
+} from "react-icons/fa";
 
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [showSignUp, setShowSignUp] = useState(false);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    name: "",
+  });
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log("Form submitted:", formData);
+  };
 
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-indigo-100 flex items-center justify-center min-h-screen">
-      <div className="rounded-2xl w-full max-w-md p-8 bg-white shadow-md">
-        <h2 className="text-2xl font-bold text-center text-gray-800">
-          Welcome Back
-        </h2>
-        <p className="mt-1 text-sm text-center text-gray-500">
-          Sign in to your account to continue
-        </p>
+    <div className="bg-gradient-to-b from-blue-100 to-blue-50 flex items-center justify-center min-h-screen">
+      <div className="flex w-[850px] h-[550px] bg-white rounded-2xl shadow-lg overflow-hidden">
+        {showSignUp ? (
+          <>
+            <div className="bg-gradient-to-r from-blue-500 to-blue-700 flex flex-col items-center justify-center w-1/2 p-10 text-white">
+              <h2 className="mb-4 text-2xl font-bold">Welcome Back!</h2>
+              <p className="mb-6 text-center">
+                To keep connected with us please login with your personal info
+              </p>
+              <button
+                onClick={() => setShowSignUp(false)}
+                className="hover:bg-white hover:text-blue-600 px-8 py-2 transition border-2 border-white rounded-full"
+              >
+                SIGN IN
+              </button>
+            </div>
 
-        <div className="mt-6">
-          <label className="block mb-2 text-sm font-medium text-gray-700">
-            Email Address
-          </label>
-          <div className="relative">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="focus:outline-none focus:ring-2 focus:ring-blue-400 w-full px-4 py-2 pl-10 border rounded-lg shadow-sm"
-            />
-            <Mail size={18} className="absolute left-3 top-2.5 text-gray-400" />
-          </div>
-        </div>
+            <div className="flex flex-col items-center justify-center w-1/2 p-10">
+              <h2 className="mb-6 text-2xl font-bold text-gray-900">
+                Create Account
+              </h2>
 
-        <div className="mt-4">
-          <label className="block mb-2 text-sm font-medium text-gray-700">
-            Password
-          </label>
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              className="focus:outline-none focus:ring-2 focus:ring-blue-400 w-full px-4 py-2 pl-10 pr-10 border rounded-lg shadow-sm"
-            />
-            <Lock
-              size={18}
-              className="left-3 top-1/2 absolute text-gray-400 -translate-y-1/2"
-            />
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()} 
-              onClick={() => setShowPassword((s) => !s)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-              className="right-3 top-1/2 absolute z-10 text-gray-400 -translate-y-1/2"
-            >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-          </div>
-          <div className="mt-1 text-right">
-            <a href="#" className="hover:underline text-sm text-blue-500">
-              Forgot your password?
-            </a>
-          </div>
-        </div>
+              <form onSubmit={handleSubmit} className="w-full">
+                <div className="focus-within:ring-2 focus-within:ring-blue-500 flex items-center w-full px-3 py-2 mb-4 border border-gray-300 rounded-md">
+                  <FaUser className="mr-2 text-gray-400" />
+                  <input
+                    type="text"
+                    name="name"
+                    placeholder="Name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="flex-1 outline-none"
+                    required
+                  />
+                </div>
 
-        <button className="hover:bg-blue-600 w-full py-2 mt-6 text-white transition bg-blue-500 rounded-lg shadow">
-          Sign In
-        </button>
+                <div className="focus-within:ring-2 focus-within:ring-blue-500 flex items-center w-full px-3 py-2 mb-4 border border-gray-300 rounded-md">
+                  <FaEnvelope className="mr-2 text-gray-400" />
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="Email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="flex-1 outline-none"
+                    required
+                  />
+                </div>
 
-        <div className="flex items-center my-6">
-          <hr className="flex-grow border-gray-300" />
-          <span className="px-2 text-sm text-gray-500">or continue with</span>
-          <hr className="flex-grow border-gray-300" />
-        </div>
+                <div className="focus-within:ring-2 focus-within:ring-blue-500 flex items-center w-full px-3 py-2 mb-2 border border-gray-300 rounded-md">
+                  <FaLock className="mr-2 text-gray-400" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    placeholder="Password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="flex-1 outline-none"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="focus:outline-none"
+                  >
+                    {showPassword ? (
+                      <FaEyeSlash className="text-gray-500" />
+                    ) : (
+                      <FaEye className="text-gray-500" />
+                    )}
+                  </button>
+                </div>
 
-        <button className="hover:bg-gray-100 flex items-center justify-center w-full py-2 transition border border-gray-300 rounded-lg">
-          <Globe size={18} className="mr-2 text-gray-600" />
-          Continue with Google
-        </button>
+                <button
+                  type="submit"
+                  className="hover:bg-blue-700 w-full px-8 py-2 mb-6 text-white transition bg-blue-600 rounded-full shadow-md"
+                >
+                  SIGN UP
+                </button>
+              </form>
 
-        <p className="mt-6 text-sm text-center text-gray-600">
-          Don’t have an account?{" "}
-          <a href="#" className="hover:underline text-blue-500">
-            Sign up
-          </a>
-        </p>
+              <div className="flex items-center w-full my-2">
+                <div className="flex-grow border-t border-gray-300"></div>
+                <span className="mx-2 text-sm text-gray-500">
+                  or use your email for registration
+                </span>
+                <div className="flex-grow border-t border-gray-300"></div>
+              </div>
+
+              <button className="hover:bg-gray-100 flex items-center justify-center w-full gap-2 px-6 py-2 transition border border-gray-300 rounded-full">
+                <FaGoogle className="text-blue-600" />
+                Continue with Google
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex flex-col items-center justify-center w-1/2 p-10">
+              <h2 className="mb-6 text-2xl font-bold text-gray-900">Sign In</h2>
+
+              <form onSubmit={handleSubmit} className="w-full">
+                <div className="focus-within:ring-2 focus-within:ring-blue-500 flex items-center w-full px-3 py-2 mb-4 border border-gray-300 rounded-md">
+                  <FaEnvelope className="mr-2 text-gray-400" />
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="Email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="flex-1 outline-none"
+                    required
+                  />
+                </div>
+
+                <div className="focus-within:ring-2 focus-within:ring-blue-500 flex items-center w-full px-3 py-2 mb-2 border border-gray-300 rounded-md">
+                  <FaLock className="mr-2 text-gray-400" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    placeholder="Password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="flex-1 outline-none"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="focus:outline-none"
+                  >
+                    {showPassword ? (
+                      <FaEyeSlash className="text-gray-500" />
+                    ) : (
+                      <FaEye className="text-gray-500" />
+                    )}
+                  </button>
+                </div>
+
+                <a
+                  href="#"
+                  className="hover:underline self-start mb-10 text-sm text-blue-600"
+                >
+                  Forgot your password?
+                </a>
+
+                <button
+                  type="submit"
+                  className="hover:bg-blue-700 w-full px-8 py-2 mb-4 text-white transition bg-blue-600 rounded-full shadow-md"
+                >
+                  SIGN IN
+                </button>
+              </form>
+
+              <div className="flex items-center w-full my-2">
+                <div className="flex-grow border-t border-gray-300"></div>
+                <span className="mx-2 text-sm text-gray-500">
+                  or continue with
+                </span>
+                <div className="flex-grow border-t border-gray-300"></div>
+              </div>
+
+              <button className="hover:bg-gray-100 flex items-center justify-center w-full gap-2 px-6 py-2 transition border border-gray-300 rounded-full">
+                <FaGoogle className="text-blue-600" />
+                Continue with Google
+              </button>
+            </div>
+
+            <div className="bg-gradient-to-r from-blue-500 to-blue-700 flex flex-col items-center justify-center w-1/2 p-10 text-white">
+              <h2 className="mb-4 text-2xl font-bold">Hello, Friend!</h2>
+              <p className="mb-6 text-center">
+                Enter your personal details and start your journey with us
+              </p>
+              <button
+                onClick={() => setShowSignUp(true)}
+                className="hover:bg-white hover:text-blue-600 px-8 py-2 transition border-2 border-white rounded-full"
+              >
+                SIGN UP
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
