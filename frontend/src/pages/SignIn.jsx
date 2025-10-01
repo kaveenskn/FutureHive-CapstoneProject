@@ -10,7 +10,7 @@ import {
 
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [showSignUp, setShowSignUp] = useState(false);
+  const [showSignUp, setShowSignUp] = useState(true);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -37,7 +37,7 @@ const SignIn = () => {
             <div className="bg-gradient-to-r from-blue-500 to-blue-700 flex flex-col items-center justify-center w-1/2 p-10 text-white">
               <h2 className="mb-4 text-2xl font-bold">Welcome Back!</h2>
               <p className="mb-6 text-center">
-                To keep connected with us please login with your personal info
+                If you already have an account, please login with your personal info. 
               </p>
               <button
                 onClick={() => setShowSignUp(false)}
