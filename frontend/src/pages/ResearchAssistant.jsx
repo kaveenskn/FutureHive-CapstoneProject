@@ -2,9 +2,7 @@ import React, { useState } from 'react';
 
 const ResearchAssistant = () => {
   const [filters, setFilters] = useState({
-    year: '',
-    university: '',
-    researchArea: '',
+    year: 'all', // Default to "all" to show all papers
   });
 
   const [papers, setPapers] = useState([
@@ -26,7 +24,24 @@ const ResearchAssistant = () => {
       year: 2022,
       tags: ['Quantum Computing'],
     },
-    // ...more papers
+    {
+      id: 3,
+      title: 'Nanotechnology in Medicine',
+      authors: 'Emily White, Michael Green',
+      description: 'The role of nanotechnology in advancing medical treatments.',
+      university: 'Harvard University',
+      year: 2021,
+      tags: ['Nanotechnology'],
+    },
+    {
+      id: 4,
+      title: 'Artificial Intelligence and Climate Change',
+      authors: 'Sarah Blue, David Black',
+      description: 'How AI is being used to combat climate change.',
+      university: 'University of Cambridge',
+      year: 2020,
+      tags: ['Artificial Intelligence', 'Climate Change'],
+    },
   ]);
 
   const handleFilterChange = (filterType, value) => {
@@ -34,10 +49,8 @@ const ResearchAssistant = () => {
   };
 
   const filteredPapers = papers.filter((paper) => {
-    const matchesYear = filters.year ? paper.year === parseInt(filters.year) : true;
-    const matchesUniversity = filters.university ? paper.university === filters.university : true;
-    const matchesResearchArea = filters.researchArea ? paper.tags.includes(filters.researchArea) : true;
-    return matchesYear && matchesUniversity && matchesResearchArea;
+    const matchesYear = filters.year === 'all' || paper.year === parseInt(filters.year);
+    return matchesYear;
   });
 
   return (
@@ -49,7 +62,7 @@ const ResearchAssistant = () => {
         {/* Year Filter */}
         <div className="mb-6">
           <h3 className="font-semibold mb-2">Year</h3>
-          {['2023', '2022', '2021', '2020'].map((year) => (
+          {['all', '2023', '2022', '2021', '2020'].map((year) => (
             <label key={year} className="block mb-1">
               <input
                 type="radio"
@@ -59,43 +72,7 @@ const ResearchAssistant = () => {
                 onChange={(e) => handleFilterChange('year', e.target.value)}
                 className="mr-2"
               />
-              {year}
-            </label>
-          ))}
-        </div>
-
-        {/* University Filter */}
-        <div className="mb-6">
-          <h3 className="font-semibold mb-2">University</h3>
-          {['MIT', 'Stanford University', 'Harvard University', 'University of Cambridge'].map((university) => (
-            <label key={university} className="block mb-1">
-              <input
-                type="radio"
-                name="university"
-                value={university}
-                checked={filters.university === university}
-                onChange={(e) => handleFilterChange('university', e.target.value)}
-                className="mr-2"
-              />
-              {university}
-            </label>
-          ))}
-        </div>
-
-        {/* Research Area Filter */}
-        <div className="mb-6">
-          <h3 className="font-semibold mb-2">Research Area</h3>
-          {['Machine Learning', 'Quantum Computing', 'Nanotechnology', 'Artificial Intelligence', 'Climate Change'].map((area) => (
-            <label key={area} className="block mb-1">
-              <input
-                type="radio"
-                name="researchArea"
-                value={area}
-                checked={filters.researchArea === area}
-                onChange={(e) => handleFilterChange('researchArea', e.target.value)}
-                className="mr-2"
-              />
-              {area}
+              {year === 'all' ? 'All' : year}
             </label>
           ))}
         </div>
@@ -104,12 +81,15 @@ const ResearchAssistant = () => {
       {/* Main Content */}
       <main className="flex-1 p-6">
         {/* Search Bar */}
-        <div className="mb-6">
+        <div className="mb-6 flex gap-2">
           <input
             type="text"
             placeholder="Search research papers, topics, or keywords…"
             className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+          <button className="bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700">
+            Search
+          </button>
         </div>
 
         {/* Research Papers */}
@@ -121,7 +101,7 @@ const ResearchAssistant = () => {
               <p className="text-sm text-gray-700 mb-4">{paper.description}</p>
               <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
                 <span>{paper.university}</span>
-                <span>{paper.year}</span>
+                <span className='font-semibold'>{paper.year}</span>
               </div>
               <div className="flex flex-wrap gap-2 mb-4">
                 {paper.tags.map((tag, index) => (
@@ -133,11 +113,11 @@ const ResearchAssistant = () => {
                   </span>
                 ))}
               </div>
-              <div className="flex gap-4">
-                <button className="bg-blue-600 w-3/5 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+              <div className="flex flex-col lg:flex-row gap-4">
+                <button className="bg-blue-600 flex-1 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
                   View Full Paper
                 </button>
-                <button className="border border-blue-600 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50">
+                <button className="border border-blue-600 flex-1 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50">
                   Get Recommendations
                 </button>
               </div>
