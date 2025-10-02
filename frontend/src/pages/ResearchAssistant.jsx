@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 const ResearchAssistant = () => {
   const [filters, setFilters] = useState({
-    year: 'all', // Default to "all" to show all papers
+    year: 'all',
   });
 
   const [papers, setPapers] = useState([
@@ -54,34 +54,11 @@ const ResearchAssistant = () => {
   });
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      {/* Sidebar */}
-      <aside className="w-1/4 bg-white p-4 shadow-md">
-        <h2 className="text-xl font-bold mb-4">Filters</h2>
-
-        {/* Year Filter */}
-        <div className="mb-6">
-          <h3 className="font-semibold mb-2">Year</h3>
-          {['all', '2023', '2022', '2021', '2020'].map((year) => (
-            <label key={year} className="block mb-1">
-              <input
-                type="radio"
-                name="year"
-                value={year}
-                checked={filters.year === year}
-                onChange={(e) => handleFilterChange('year', e.target.value)}
-                className="mr-2"
-              />
-              {year === 'all' ? 'All' : year}
-            </label>
-          ))}
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 p-6">
-        {/* Search Bar */}
-        <div className="mb-6 flex gap-2">
+    <div className="flex flex-col min-h-screen bg-gray-100">
+      {/* Search Bar Section */}
+      <div className="bg-white p-6 shadow-md">
+        <h1 className="text-2xl font-bold mb-4">Search for Research Papers</h1>
+        <div className="flex gap-2">
           <input
             type="text"
             placeholder="Search research papers, topics, or keywords…"
@@ -91,40 +68,68 @@ const ResearchAssistant = () => {
             Search
           </button>
         </div>
+      </div>
+
+      {/* Main Content Section */}
+      <div className="flex flex-1">
+        {/* Sidebar */}
+        <aside className="w-1/4 bg-white p-4 shadow-md">
+          <h2 className="text-xl font-bold mb-4">Filters</h2>
+
+          {/* Year Filter */}
+          <div className="mb-6">
+            <h3 className="font-semibold mb-2">Year</h3>
+            {['all', '2023', '2022', '2021', '2020'].map((year) => (
+              <label key={year} className="block mb-1">
+                <input
+                  type="radio"
+                  name="year"
+                  value={year}
+                  checked={filters.year === year}
+                  onChange={(e) => handleFilterChange('year', e.target.value)}
+                  className="mr-2"
+                />
+                {year === 'all' ? 'All' : year}
+              </label>
+            ))}
+          </div>
+        </aside>
 
         {/* Research Papers */}
-        <div className="space-y-6">
-          {filteredPapers.map((paper) => (
-            <div key={paper.id} className="bg-white p-6 rounded-lg shadow-md w-full">
-              <h3 className="text-lg font-bold mb-2">{paper.title}</h3>
-              <p className="text-sm text-gray-600 mb-2">{paper.authors}</p>
-              <p className="text-sm text-gray-700 mb-4">{paper.description}</p>
-              <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                <span>{paper.university}</span>
-                <span className='font-semibold'>{paper.year}</span>
+        <main className="flex-1 p-6">
+          <div className="space-y-6">
+            {filteredPapers.map((paper) => (
+              <div key={paper.id} className="bg-white p-6 rounded-lg shadow-md w-full">
+                <h3 className="text-lg font-bold mb-2">{paper.title}</h3>
+                <p className="text-sm text-gray-600 mb-2">{paper.authors}</p>
+                <p className="text-sm text-gray-700 mb-4">{paper.description}</p>
+                <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                  <span>{paper.university}</span>
+                  <span>{paper.year}</span>
+                </div>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {paper.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <div className="flex flex-col lg:flex-row gap-4">
+                  <button className="bg-blue-600 flex-1 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                    View Full Paper
+                  </button>
+                  <button className="border border-blue-600 flex-1 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50">
+                    Get Recommendations
+                  </button>
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {paper.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-              <div className="flex flex-col lg:flex-row gap-4">
-                <button className="bg-blue-600 flex-1 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                  View Full Paper
-                </button>
-                <button className="border border-blue-600 flex-1 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50">
-                  Get Recommendations
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </main>
+            ))}
+          </div>
+        </main>
+      </div>
     </div>
   );
 };
