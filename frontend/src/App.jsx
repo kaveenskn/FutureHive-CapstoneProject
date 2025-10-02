@@ -6,10 +6,7 @@ import Homepage from "./pages/Homepage";
 function App() {
   return (
     <div className="App">
-      <Routes>
-        <Route path="/" element={<Homepage />} />
-        <Route path="/signin" element={<SignIn />} />
-      </Routes>
+     <SignIn/>
     </div>
   );
 }
