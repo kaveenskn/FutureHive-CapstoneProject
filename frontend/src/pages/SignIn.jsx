@@ -7,7 +7,14 @@ import {
   FaGoogle,
   FaUser,
 } from "react-icons/fa";
-
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  updateProfile,
+} from "firebase/auth";
+import { auth } from "../components/Firebase";
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showSignUp, setShowSignUp] = useState(true);
@@ -16,17 +23,105 @@ const SignIn = () => {
     password: "",
     name: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
+    if (error) setError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleEmailPasswordSubmit = async (e) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
+    setLoading(true);
+    setError("");
+
+    try {
+      if (showSignUp) {
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          formData.email,
+          formData.password
+        );
+
+        await updateProfile(userCredential.user, {
+          displayName: formData.name,
+        });
+
+        console.log("User created successfully:", userCredential.user);
+        alert("Account created successfully! Welcome " + formData.name);
+      } else {
+        const userCredential = await signInWithEmailAndPassword(
+          auth,
+          formData.email,
+          formData.password
+        );
+        console.log("User signed in successfully:", userCredential.user);
+        alert("Welcome back! Signed in successfully.");
+      }
+    } catch (error) {
+      console.error("Authentication error:", error);
+      setError(getErrorMessage(error.code));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.addScope("profile");
+      provider.addScope("email");
+
+      provider.setCustomParameters({
+        prompt: "select_account",
+      });
+
+      const result = await signInWithPopup(auth, provider);
+      console.log("Google sign in successful:", result.user);
+      alert(
+        "Google sign in successful! Welcome " +
+          (result.user.displayName || result.user.email)
+      );
+    } catch (error) {
+      console.error("Google sign in error:", error);
+      setError(getErrorMessage(error.code));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getErrorMessage = (errorCode) => {
+    switch (errorCode) {
+      case "auth/email-already-in-use":
+        return "This email is already registered. Please sign in instead.";
+      case "auth/invalid-email":
+        return "Please enter a valid email address.";
+      case "auth/weak-password":
+        return "Password should be at least 6 characters.";
+      case "auth/user-not-found":
+        return "No account found with this email.";
+      case "auth/wrong-password":
+        return "Incorrect password. Please try again.";
+      case "auth/too-many-requests":
+        return "Too many attempts. Please try again later.";
+      case "auth/popup-closed-by-user":
+        return "Google sign in was cancelled.";
+      case "auth/account-exists-with-different-credential":
+        return "An account already exists with the same email address but different sign-in credentials.";
+      case "auth/popup-blocked":
+        return "Popup was blocked by browser. Please allow popups for this site.";
+      case "auth/unauthorized-domain":
+        return "This domain is not authorized for OAuth operations.";
+      default:
+        return errorCode || "An error occurred. Please try again.";
+    }
   };
 
   return (
@@ -37,10 +132,14 @@ const SignIn = () => {
             <div className="bg-gradient-to-r from-blue-500 to-blue-700 flex flex-col items-center justify-center w-1/2 p-10 text-white">
               <h2 className="mb-4 text-2xl font-bold">Welcome Back!</h2>
               <p className="mb-6 text-center">
-                If you already have an account, please login with your personal info. 
+                If you already have an account, please login with your personal
+                info.
               </p>
               <button
-                onClick={() => setShowSignUp(false)}
+                onClick={() => {
+                  setShowSignUp(false);
+                  setError("");
+                }}
                 className="hover:bg-white hover:text-blue-600 px-8 py-2 transition border-2 border-white rounded-full"
               >
                 SIGN IN
@@ -52,7 +151,13 @@ const SignIn = () => {
                 Create Account
               </h2>
 
-              <form onSubmit={handleSubmit} className="w-full">
+              {error && (
+                <div className="w-full p-3 mb-4 text-sm text-red-700 bg-red-100 border border-red-300 rounded-md">
+                  {error}
+                </div>
+              )}
+
+              <form onSubmit={handleEmailPasswordSubmit} className="w-full">
                 <div className="focus-within:ring-2 focus-within:ring-blue-500 flex items-center w-full px-3 py-2 mb-4 border border-gray-300 rounded-md">
                   <FaUser className="mr-2 text-gray-400" />
                   <input
@@ -89,6 +194,7 @@ const SignIn = () => {
                     onChange={handleChange}
                     className="flex-1 outline-none"
                     required
+                    minLength={6}
                   />
                   <button
                     type="button"
@@ -105,21 +211,34 @@ const SignIn = () => {
 
                 <button
                   type="submit"
-                  className="hover:bg-blue-700 w-full px-8 py-2 mb-6 text-white transition bg-blue-600 rounded-full shadow-md"
+                  disabled={loading}
+                  className={`w-full px-8 py-2 mb-6 text-white transition rounded-full shadow-md ${
+                    loading
+                      ? "bg-blue-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700"
+                  }`}
                 >
-                  SIGN UP
+                  {loading ? "CREATING ACCOUNT..." : "SIGN UP"}
                 </button>
               </form>
 
               <div className="flex items-center w-full my-2">
                 <div className="flex-grow border-t border-gray-300"></div>
                 <span className="mx-2 text-sm text-gray-500">
-                  or use your email for registration
+                  or sign up with
                 </span>
                 <div className="flex-grow border-t border-gray-300"></div>
               </div>
 
-              <button className="hover:bg-gray-100 flex items-center justify-center w-full gap-2 px-6 py-2 transition border border-gray-300 rounded-full">
+              <button
+                onClick={handleGoogleSignIn}
+                disabled={loading}
+                className={`flex items-center justify-center w-full gap-2 px-6 py-2 transition border border-gray-300 rounded-full ${
+                  loading
+                    ? "cursor-not-allowed opacity-50"
+                    : "hover:bg-gray-100"
+                }`}
+              >
                 <FaGoogle className="text-blue-600" />
                 Continue with Google
               </button>
@@ -130,7 +249,13 @@ const SignIn = () => {
             <div className="flex flex-col items-center justify-center w-1/2 p-10">
               <h2 className="mb-6 text-2xl font-bold text-gray-900">Sign In</h2>
 
-              <form onSubmit={handleSubmit} className="w-full">
+              {error && (
+                <div className="w-full p-3 mb-4 text-sm text-red-700 bg-red-100 border border-red-300 rounded-md">
+                  {error}
+                </div>
+              )}
+
+              <form onSubmit={handleEmailPasswordSubmit} className="w-full">
                 <div className="focus-within:ring-2 focus-within:ring-blue-500 flex items-center w-full px-3 py-2 mb-4 border border-gray-300 rounded-md">
                   <FaEnvelope className="mr-2 text-gray-400" />
                   <input
@@ -177,9 +302,14 @@ const SignIn = () => {
 
                 <button
                   type="submit"
-                  className="hover:bg-blue-700 w-full px-8 py-2 mb-4 text-white transition bg-blue-600 rounded-full shadow-md"
+                  disabled={loading}
+                  className={`w-full px-8 py-2 mb-4 text-white transition rounded-full shadow-md ${
+                    loading
+                      ? "bg-blue-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700"
+                  }`}
                 >
-                  SIGN IN
+                  {loading ? "SIGNING IN..." : "SIGN IN"}
                 </button>
               </form>
 
@@ -191,7 +321,15 @@ const SignIn = () => {
                 <div className="flex-grow border-t border-gray-300"></div>
               </div>
 
-              <button className="hover:bg-gray-100 flex items-center justify-center w-full gap-2 px-6 py-2 transition border border-gray-300 rounded-full">
+              <button
+                onClick={handleGoogleSignIn}
+                disabled={loading}
+                className={`flex items-center justify-center w-full gap-2 px-6 py-2 transition border border-gray-300 rounded-full ${
+                  loading
+                    ? "cursor-not-allowed opacity-50"
+                    : "hover:bg-gray-100"
+                }`}
+              >
                 <FaGoogle className="text-blue-600" />
                 Continue with Google
               </button>
@@ -203,7 +341,10 @@ const SignIn = () => {
                 Enter your personal details and start your journey with us
               </p>
               <button
-                onClick={() => setShowSignUp(true)}
+                onClick={() => {
+                  setShowSignUp(true);
+                  setError("");
+                }}
                 className="hover:bg-white hover:text-blue-600 px-8 py-2 transition border-2 border-white rounded-full"
               >
                 SIGN UP
