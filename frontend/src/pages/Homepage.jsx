@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { gsap } from "gsap";
-import Navbar from "../components/Navbar"; // Import Navbar
+ // Import Navbar
 import heroImage from "../assets/image.png"; // adjust the path if needed
 
 const Homepage = () => {
@@ -27,8 +27,8 @@ const Homepage = () => {
 
   return (
     <div className="h-screen bg-gradient-to-b from-blue-100 to-blue-50 flex flex-col">
-      {/* Navbar */}
-      <Navbar />
+     
+     
 
       {/* Hero Section */}
       <main className="flex-1 container mx-auto px-2 flex items-center">
