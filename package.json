@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "dev": "cd frontend && npm run dev"
+  },
   "dependencies": {
     "gsap": "^3.13.0",
     "lucide-react": "^0.544.0",
