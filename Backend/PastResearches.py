@@ -61,6 +61,11 @@ vectorstore = Chroma.from_documents(
 )
 retriever = vectorstore.as_retriever(search_kwargs={"k": 5})  # top 5 relevant chunks
 
+
+
+
+
+
 # ----------------------------
 # Step 6: Function to search projects intelligently
 # ----------------------------
@@ -91,6 +96,32 @@ def search_projects(user_query):
 # ----------------------------
 app = Flask(__name__)
 CORS(app)
+
+def get_default_projects(limit=5):
+    # Just take the first few rows from the dataframe
+    default_results = []
+    for idx, row in df.head(limit).iterrows():
+        default_results.append({
+            "title": row["Title"],
+            "authors": row["Author"],
+            "description": row["Abstract"],
+            "year": row["Year"],
+        })
+    return default_results
+
+@app.route("/default", methods=["GET"])
+def default_api():
+    try:
+        results = get_default_projects(limit=5)
+        return jsonify({"results": results}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
+
+
+
 
 @app.route("/search", methods=["POST"])
 def search_api():

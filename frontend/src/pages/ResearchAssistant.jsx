@@ -1,11 +1,37 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const ResearchAssistant = () => {
+  const navigate = useNavigate();
   const [query, setQuery] = useState(""); // State to store the search query
   const [results, setResults] = useState([]); // State to store the search results
   const [filters, setFilters] = useState({
     year: "all",
+    type: "all",
   });
+
+  useEffect(() => {
+    // Fetch default values when the component mounts
+    const fetchDefaultResults = async () => {
+      try {
+        const response = await fetch("http://127.0.0.1:5000/default", {
+          method: "GET",
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Default results:", data.results); // Debugging
+          setResults(data.results); // Set default results
+        } else {
+          console.error("Error fetching default results:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error:", error);
+      }
+    };
+
+    fetchDefaultResults();
+  }, []);
 
   const handleFilterChange = (filterType, value) => {
     setFilters({ ...filters, [filterType]: value });
@@ -41,7 +67,9 @@ const ResearchAssistant = () => {
   const filteredResults = results.filter((result) => {
     const matchesYear =
       filters.year === "all" || result.year === parseInt(filters.year);
-    return matchesYear;
+    const matchesType =
+      filters.type === "all" || result.type === filters.type;
+    return matchesYear && matchesType;
   });
 
   return (
@@ -89,6 +117,24 @@ const ResearchAssistant = () => {
               </label>
             ))}
           </div>
+
+          {/* Project Type Filter */}
+          <div className="mb-6">
+            <h3 className="font-semibold mb-2">Project Type</h3>
+            {["all", "Research", "Capstone", "Community"].map((type) => (
+              <label key={type} className="block mb-1">
+                <input
+                  type="radio"
+                  name="type"
+                  value={type}
+                  checked={filters.type === type}
+                  onChange={(e) => handleFilterChange("type", e.target.value)}
+                  className="mr-2"
+                />
+                {type === "all" ? "All" : type}
+              </label>
+            ))}
+          </div>
         </aside>
 
         {/* Research Papers */}
@@ -107,8 +153,8 @@ const ResearchAssistant = () => {
                   <button className="bg-blue-600 flex-1 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
                     View Full Paper
                   </button>
-                  <button className="border border-blue-600 flex-1 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50">
-                    Get Recommendations
+                  <button onClick={() => navigate('/chat', { state: { paper: result } })} className="border border-blue-600 flex-1 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50">
+                    Ask AI for Insights
                   </button>
                 </div>
               </div>
