@@ -8,7 +8,7 @@ const Navbar = () => {
   return (
     <nav className="backdrop-blur bg-white/80 border-b shadow-lg shadow-slate-300">
       <div className="container mx-auto px-2 py-4 flex items-center justify-between">
-        <div className="text-2xl font-bold text-gray-900">Research Assistant</div>
+        <div className="text-2xl font-bold text-gray-900">Research <span className="text-blue-600">Assistant</span></div>
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-6">

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { FaBookmark, FaRegBookmark } from "react-icons/fa";
 
 const ResearchAssistant = () => {
   const navigate = useNavigate();
@@ -9,6 +10,9 @@ const ResearchAssistant = () => {
     year: "all",
     type: "all",
   });
+
+  // In-memory bookmark keys (UI only). Will be saved to backend later.
+  const [bookmarks, setBookmarks] = useState([]);
 
   useEffect(() => {
     // Fetch default values when the component mounts
@@ -72,6 +76,18 @@ const ResearchAssistant = () => {
     return matchesYear && matchesType;
   });
 
+  // Bookmark helpers (in-memory only)
+  const makeKey = (paper) => `${paper.title}||${paper.year}`;
+  const isBookmarked = (paper) => bookmarks.includes(makeKey(paper));
+
+  const toggleBookmark = (paper) => {
+    const key = makeKey(paper);
+    setBookmarks((prev) => {
+      if (prev.includes(key)) return prev.filter((k) => k !== key);
+      return [key, ...prev];
+    });
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
       {/* Search Bar Section */}
@@ -96,7 +112,7 @@ const ResearchAssistant = () => {
 
       {/* Main Content Section */}
       <div className="flex flex-1">
-        {/* Sidebar */}
+        {/* Sidebar (filters only) */}
         <aside className="w-1/4 bg-white p-4 shadow-md">
           <h2 className="text-xl font-bold mb-4">Filters</h2>
 
@@ -141,7 +157,12 @@ const ResearchAssistant = () => {
         <main className="flex-1 p-6">
           <div className="space-y-6">
             {filteredResults.map((result, index) => (
-              <div key={index} className="bg-white p-6 rounded-lg shadow-md w-full">
+              <div key={index} className="bg-white p-6 rounded-lg shadow-md w-full relative">
+                {/* Bookmark (top-right) */}
+                <button onClick={() => toggleBookmark(result)} className="absolute top-3 right-3 p-2 rounded-md hover:bg-gray-100" aria-label="Toggle bookmark">
+                  {isBookmarked(result) ? <FaBookmark className="text-blue-600" /> : <FaRegBookmark className="text-gray-600" />}
+                </button>
+
                 <h3 className="text-lg font-bold mb-2">{result.title}</h3>
                 <p className="text-sm text-gray-600 mb-2">{result.authors}</p>
                 <p className="text-sm text-gray-700 mb-4">{result.description}</p>
@@ -153,9 +174,13 @@ const ResearchAssistant = () => {
                   <button className="bg-blue-600 flex-1 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
                     View Full Paper
                   </button>
-                  <button onClick={() => navigate('/chat', { state: { paper: result } })} className="border border-blue-600 flex-1 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50">
-                    Ask AI for Insights
-                  </button>
+
+                  <div className="flex-1 flex items-center gap-2">
+                    <button onClick={() => navigate('/chat', { state: { paper: result } })} className="border border-blue-600 flex-1 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50">
+                      Ask AI for Insights
+                    </button>
+
+                  </div>
                 </div>
               </div>
             ))}

@@ -17,10 +17,18 @@ const Chatbot = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:5000/ask", {
+      // Send only the topic and abstract to the backend so answers are scoped to this paper
+      const topic = paper?.title || "";
+      const abstract = paper?.description || paper?.abstract || "";
+
+  const year = paper?.year || "";
+  const authors = paper?.authors || paper?.authors_list || paper?.author || "";
+  const payload = { topic, abstract, year, authors, question };
+
+      const response = await fetch("http://127.0.0.1:8000/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paper, question }),
+        body: JSON.stringify(payload),
       });
       const data = await response.json();
       const botMsg = { role: "bot", text: data.answer || "No answer." };
@@ -47,6 +55,8 @@ const Chatbot = () => {
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-2">Ask AI about:</h2>
       <h3 className="text-xl mb-4">{paper.title}</h3>
+
+      <p className="text-sm text-gray-500 mb-4">The AI will answer based only on this paper's topic and abstract.</p>
 
       <div className="mb-4 bg-white p-4 rounded shadow max-h-80 overflow-auto">
         {messages.length === 0 && <p className="text-gray-500">Ask anything about this paper.</p>}
