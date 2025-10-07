@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FaEnvelope,
   FaLock,
@@ -25,6 +26,7 @@ const SignIn = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({
@@ -52,7 +54,8 @@ const SignIn = () => {
         });
 
         console.log("User created successfully:", userCredential.user);
-        alert("Account created successfully! Welcome " + formData.name);
+        // Redirect to homepage after successful sign up
+        navigate("/", { replace: true });
       } else {
         const userCredential = await signInWithEmailAndPassword(
           auth,
@@ -60,7 +63,8 @@ const SignIn = () => {
           formData.password
         );
         console.log("User signed in successfully:", userCredential.user);
-        alert("Welcome back! Signed in successfully.");
+        // Redirect to homepage after successful sign in
+        navigate("/", { replace: true });
       }
     } catch (error) {
       console.error("Authentication error:", error);
@@ -85,10 +89,8 @@ const SignIn = () => {
 
       const result = await signInWithPopup(auth, provider);
       console.log("Google sign in successful:", result.user);
-      alert(
-        "Google sign in successful! Welcome " +
-          (result.user.displayName || result.user.email)
-      );
+      // Redirect to homepage after successful Google sign-in
+      navigate("/", { replace: true });
     } catch (error) {
       console.error("Google sign in error:", error);
       setError(getErrorMessage(error.code));
