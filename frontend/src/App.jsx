@@ -13,6 +13,7 @@ import Mentors from "./pages/Mentors.jsx";
 
 function App() {
   return (
+
     <>
       <Navbar />
       <Routes>
@@ -26,6 +27,7 @@ function App() {
       </Routes>
       <ToastContainer />
     </>
+
   );
 }
 
