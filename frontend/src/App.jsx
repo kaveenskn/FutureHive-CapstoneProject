@@ -7,6 +7,7 @@ import Navbar from "./components/Navbar.jsx";
 import Chatbot from "./pages/Chatbot.jsx";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import IdeaGenerator from "./pages/IdeaGenerator.jsx";
 
 
 function App() {
@@ -18,6 +19,8 @@ function App() {
         <Route path="/research" element={<ResearchAssistant />} />
         <Route path="/signin" element={<SignIn />} />
         <Route path="/chat" element={<Chatbot />} />
+        <Route path="/ideas" element={<IdeaGenerator />} />
+
       </Routes>
       <ToastContainer />
     </>
