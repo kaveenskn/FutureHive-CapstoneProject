@@ -1,7 +1,7 @@
 # ----------------------------
 # Step 0: Install requirements
 # ----------------------------
-# pip install pandas langchain langchain-community chromadb sentence-transformers textblob
+# pip install pandas langchain langchain-community chromadb sentence-transformers textblob flask flask-cors
 
 import pandas as pd
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -9,6 +9,8 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from textblob import TextBlob
 from langchain.schema import Document
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 
 # ----------------------------
 # Step 1: Load Excel and Handle Missing Values
@@ -43,7 +45,6 @@ Author: {row['Author']}
     except KeyError as e:
         print(f"Missing column in row {idx}: {e}")
 
-
 # ----------------------------
 # Step 4: Create embeddings
 # ----------------------------
@@ -51,8 +52,8 @@ Author: {row['Author']}
 embeddings_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
 
 # ----------------------------
-
-
+# Step 5: Store documents in vector database
+# ----------------------------
 vectorstore = Chroma.from_documents(
     documents=documents,
     embedding=embeddings_model,
@@ -61,37 +62,81 @@ vectorstore = Chroma.from_documents(
 retriever = vectorstore.as_retriever(search_kwargs={"k": 5})  # top 5 relevant chunks
 
 
+
+
+
+
 # ----------------------------
-# Step 7: Function to search projects intelligently
+# Step 6: Function to search projects intelligently
 # ----------------------------
 def search_projects(user_query):
-    # Disable query correction for now
-    corrected_query = user_query  # No correction applied
-
     # Debug: Print the query being used
-    print(f"Query used: {corrected_query}")
+    print(f"Query used: {user_query}")
 
     # Retrieve top matching chunks with adjusted parameters
-    results = retriever.get_relevant_documents(corrected_query)
+    results = retriever.get_relevant_documents(user_query)
 
     if not results:
         print("No matching projects found.")
-        return
+        return []
 
-    print(f"Top {len(results)} matching chunks for query '{user_query}':\n")
-    for idx, doc in enumerate(results, 1):
-        # Display only the content of the chunk
-        print(f"Chunk {idx}:")
-        print(doc.page_content)
-        print("-" * 50)
-        
-
+    # Format the results for the frontend
+    formatted_results = []
+    for doc in results:
+        formatted_results.append({
+            "title": doc.metadata.get("Title", ""),
+            "authors": doc.metadata.get("Author", ""),
+            "description": doc.metadata.get("Abstract", ""),
+            "year": doc.metadata.get("Year", ""),
+        })
+    return formatted_results
 
 # ----------------------------
-# Step 8: Example usage
+# Step 7: Flask API Setup
 # ----------------------------
-# Add a new project
+app = Flask(__name__)
+CORS(app)
 
-# Search projects
-search_projects("diseases")  # typo on purpose
-search_projects("cybersecurity in healthcare")
+def get_default_projects(limit=5):
+    # Just take the first few rows from the dataframe
+    default_results = []
+    for idx, row in df.head(limit).iterrows():
+        default_results.append({
+            "title": row["Title"],
+            "authors": row["Author"],
+            "description": row["Abstract"],
+            "year": row["Year"],
+        })
+    return default_results
+
+@app.route("/default", methods=["GET"])
+def default_api():
+    try:
+        results = get_default_projects(limit=5)
+        return jsonify({"results": results}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
+
+
+
+
+@app.route("/search", methods=["POST"])
+def search_api():
+    try:
+        data = request.get_json()
+        query = data.get("query", "")
+        if not query:
+            return jsonify({"error": "No query provided"}), 400
+
+        # Call the search_projects function
+        results = search_projects(query)
+        return jsonify({"results": results}), 200
+    except Exception as e:
+        print(f"Error in /search endpoint: {e}")
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == "__main__":
+    app.run(port=5000, debug=True)

@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { gsap } from "gsap";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../components/Firebase";
+import { toast } from "react-toastify";
  // Import Navbar
 import heroImage from "../assets/image.png"; // adjust the path if needed
 
@@ -11,8 +14,32 @@ const Homepage = () => {
 
   const handleStartSearching = () => {
     console.log("Search query:", query);
+    if (!user) {
+      toast.info("Please log in to connect", { position: "top-right" });
+      // give the toast a moment to be noticed, then navigate to signin
+      setTimeout(() => navigate("/signin"), 900);
+      return;
+    }
     navigate("/search");
   };
+
+  const handleExplore = () => {
+    if (!user) {
+      toast.info("Please log in to connect", { position: "top-right" });
+      setTimeout(() => navigate("/signin"), 900);
+      return;
+    }
+    navigate("/recommendations");
+  };
+
+  const [user, setUser] = React.useState(null);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     // GSAP animation for the image
@@ -65,13 +92,13 @@ const Homepage = () => {
             <div className="flex gap-6 mt-20">
               <button
                 onClick={handleStartSearching}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl shadow-md"
+                className="px-8 py-3 rounded-xl shadow-md bg-blue-600 hover:bg-blue-700 text-white"
               >
                 Start Searching
               </button>
               <button
-                onClick={() => navigate("/recommendations")}
-                className="border border-blue-600 text-blue-600 px-8 py-3 rounded-xl hover:bg-blue-50"
+                onClick={handleExplore}
+                className="px-8 py-3 rounded-xl border border-blue-600 text-blue-600 hover:bg-blue-50"
               >
                 Explore Recommendations
               </button>
