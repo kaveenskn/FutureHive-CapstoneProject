@@ -9,11 +9,10 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import IdeaGenerator from "./pages/IdeaGenerator.jsx";
 import Mentors from "./pages/Mentors.jsx";
-
+import ResearchHub from "./pages/ResearchHub.jsx";
 
 function App() {
   return (
-
     <>
       <Navbar />
       <Routes>
@@ -22,12 +21,11 @@ function App() {
         <Route path="/signin" element={<SignIn />} />
         <Route path="/chat" element={<Chatbot />} />
         <Route path="/ideas" element={<IdeaGenerator />} />
-  <Route path="/mentors" element={<Mentors />} />
-
+        <Route path="/mentors" element={<Mentors />} />
+        <Route path="/researchhub" element={<ResearchHub />} />
       </Routes>
       <ToastContainer />
     </>
-
   );
 }
 
