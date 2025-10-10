@@ -10,6 +10,7 @@ import "react-toastify/dist/ReactToastify.css";
 import IdeaGenerator from "./pages/IdeaGenerator.jsx";
 import Mentors from "./pages/Mentors.jsx";
 import ResearchHub from "./pages/ResearchHub.jsx";
+import Projects from "./pages/Projects.jsx";
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
         <Route path="/chat" element={<Chatbot />} />
         <Route path="/ideas" element={<IdeaGenerator />} />
         <Route path="/mentors" element={<Mentors />} />
+  <Route path="/projects" element={<Projects />} />
         <Route path="/researchhub" element={<ResearchHub />} />
       </Routes>
       <ToastContainer />
