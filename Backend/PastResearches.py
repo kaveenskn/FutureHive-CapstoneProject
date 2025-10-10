@@ -119,10 +119,6 @@ def default_api():
 
 
 
-
-
-
-
 @app.route("/search", methods=["POST"])
 def search_api():
     try:

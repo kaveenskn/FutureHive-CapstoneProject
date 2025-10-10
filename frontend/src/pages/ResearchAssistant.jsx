@@ -1,191 +1,167 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaBookmark, FaRegBookmark } from "react-icons/fa";
+import ResearchHub from "./ResearchHub";
+
+const YEARS = ["all", "2024", "2023", "2022", "2021", "2020"];
+const TYPES = ["all", "Research", "Capstone", "Community"];
 
 const ResearchAssistant = () => {
   const navigate = useNavigate();
-  const [query, setQuery] = useState(""); // State to store the search query
-  const [results, setResults] = useState([]); // State to store the search results
-  const [filters, setFilters] = useState({
-    year: "all",
-    type: "all",
-  });
-
-  // In-memory bookmark keys (UI only). Will be saved to backend later.
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [filters, setFilters] = useState({ year: "all", type: "all" });
   const [bookmarks, setBookmarks] = useState([]);
 
   useEffect(() => {
-    // Fetch default values when the component mounts
-    const fetchDefaultResults = async () => {
+    const fetchDefault = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:5000/default", {
-          method: "GET",
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log("Default results:", data.results); // Debugging
-          setResults(data.results); // Set default results
-        } else {
-          console.error("Error fetching default results:", response.statusText);
+        const res = await fetch("http://127.0.0.1:5000/default");
+        if (res.ok) {
+          const data = await res.json();
+          setResults(data.results || []);
         }
-      } catch (error) {
-        console.error("Error:", error);
+      } catch (e) {
+        console.error(e);
       }
     };
-
-    fetchDefaultResults();
+    fetchDefault();
   }, []);
 
-  const handleFilterChange = (filterType, value) => {
-    setFilters({ ...filters, [filterType]: value });
-  };
-
   const handleSearch = async () => {
-    if (!query.trim()) {
-      alert("Please enter a search query.");
-      return;
-    }
-
+    if (!query.trim()) return;
     try {
-      const response = await fetch("http://127.0.0.1:5000/search", {
+      const res = await fetch("http://127.0.0.1:5000/search", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ query }), // Send the search query to the backend
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query }),
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Search results:", data.results); // Debugging
-        setResults(data.results); // Update the results state
-      } else {
-        console.error("Error fetching search results:", response.statusText);
+      if (res.ok) {
+        const data = await res.json();
+        setResults(data.results || []);
       }
-    } catch (error) {
-      console.error("Error:", error);
+    } catch (e) {
+      console.error(e);
     }
   };
 
-  const filteredResults = results.filter((result) => {
-    const matchesYear =
-      filters.year === "all" || result.year === parseInt(filters.year);
-    const matchesType =
-      filters.type === "all" || result.type === filters.type;
-    return matchesYear && matchesType;
+  const handleFilterChange = (field, value) => setFilters((f) => ({ ...f, [field]: value }));
+
+  const filteredResults = results.filter((r) => {
+    const matchYear = filters.year === "all" || String(r.year) === String(filters.year);
+    const matchType = filters.type === "all" || r.type === filters.type;
+    return matchYear && matchType;
   });
 
-  // Bookmark helpers (in-memory only)
   const makeKey = (paper) => `${paper.title}||${paper.year}`;
   const isBookmarked = (paper) => bookmarks.includes(makeKey(paper));
-
   const toggleBookmark = (paper) => {
     const key = makeKey(paper);
-    setBookmarks((prev) => {
-      if (prev.includes(key)) return prev.filter((k) => k !== key);
-      return [key, ...prev];
-    });
+    setBookmarks((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [key, ...prev]));
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100">
-      {/* Search Bar Section */}
-      <div className="bg-white p-6 shadow-md">
-        <h1 className="text-2xl font-bold mb-4">Search for Research Papers</h1>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search research papers, topics, or keywords…"
-            className="flex-1 p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <button
-            onClick={handleSearch}
-            className="bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700"
-          >
-            Search
-          </button>
+    <div className="min-h-screen bg-gradient-to-b from-white via-sky-50 to-white text-slate-900">
+      <ResearchHub />
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <header className="mb-6">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900">Search for Research Papers</h1>
+          <p className="mt-2 text-slate-600">Explore papers, then ask the AI for focused insights on any selected paper.</p>
+        </header>
+
+        {/* Search bar */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm mb-6">
+          <div className="flex gap-3 items-center">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search research papers, topics, or keywords…"
+              className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-300 text-sm"
+            />
+            <button
+              onClick={handleSearch}
+              className="inline-flex items-center px-5 py-3 rounded-xl bg-gradient-to-r from-sky-400 to-sky-300 text-white font-medium shadow-md hover:shadow-lg transition"
+            >
+              Search
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Main Content Section */}
-      <div className="flex flex-1">
-        {/* Sidebar (filters only) */}
-        <aside className="w-1/4 bg-white p-4 shadow-md">
-          <h2 className="text-xl font-bold mb-4">Filters</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Filters */}
+          <aside className="lg:col-span-1 bg-white rounded-xl p-4 shadow-sm">
+            <h3 className="text-lg font-semibold mb-3">Filters</h3>
 
-          {/* Year Filter */}
-          <div className="mb-6">
-            <h3 className="font-semibold mb-2">Year</h3>
-            {["all", "2023", "2022", "2021", "2020"].map((year) => (
-              <label key={year} className="block mb-1">
-                <input
-                  type="radio"
-                  name="year"
-                  value={year}
-                  checked={filters.year === year}
-                  onChange={(e) => handleFilterChange("year", e.target.value)}
-                  className="mr-2"
-                />
-                {year === "all" ? "All" : year}
-              </label>
-            ))}
-          </div>
+            <div className="mb-4">
+              <div className="text-sm font-medium mb-2">Year</div>
+              <div className="space-y-2">
+                {YEARS.map((y) => (
+                  <label key={y} className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="year"
+                      value={y}
+                      checked={filters.year === y}
+                      onChange={() => handleFilterChange("year", y)}
+                      className="w-4 h-4 rounded-full text-sky-500 focus:ring-sky-300"
+                    />
+                    <span className="text-sm text-slate-700">{y === "all" ? "All" : y}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
 
-          {/* Project Type Filter */}
-          <div className="mb-6">
-            <h3 className="font-semibold mb-2">Project Type</h3>
-            {["all", "Research", "Capstone", "Community"].map((type) => (
-              <label key={type} className="block mb-1">
-                <input
-                  type="radio"
-                  name="type"
-                  value={type}
-                  checked={filters.type === type}
-                  onChange={(e) => handleFilterChange("type", e.target.value)}
-                  className="mr-2"
-                />
-                {type === "all" ? "All" : type}
-              </label>
-            ))}
-          </div>
-        </aside>
+            <div>
+              <div className="text-sm font-medium mb-2">Project Type</div>
+              <div className="space-y-2">
+                {TYPES.map((t) => (
+                  <label key={t} className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="type"
+                      value={t}
+                      checked={filters.type === t}
+                      onChange={() => handleFilterChange("type", t)}
+                      className="w-4 h-4 rounded-full text-sky-500 focus:ring-sky-300"
+                    />
+                    <span className="text-sm text-slate-700">{t === "all" ? "All" : t}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </aside>
 
-        {/* Research Papers */}
-        <main className="flex-1 p-6">
-          <div className="space-y-6">
-            {filteredResults.map((result, index) => (
-              <div key={index} className="bg-white p-6 rounded-lg shadow-md w-full relative">
-                {/* Bookmark (top-right) */}
-                <button onClick={() => toggleBookmark(result)} className="absolute top-3 right-3 p-2 rounded-md hover:bg-gray-100" aria-label="Toggle bookmark">
-                  {isBookmarked(result) ? <FaBookmark className="text-blue-600" /> : <FaRegBookmark className="text-gray-600" />}
-                </button>
-
-                <h3 className="text-lg font-bold mb-2">{result.title}</h3>
-                <p className="text-sm text-gray-600 mb-2">{result.authors}</p>
-                <p className="text-sm text-gray-700 mb-4">{result.description}</p>
-                <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                  <span>{result.university || "Unknown University"}</span>
-                  <span>{result.year}</span>
-                </div>
-                <div className="flex flex-col lg:flex-row gap-4">
-                  <button className="bg-blue-600 flex-1 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                    View Full Paper
+          {/* Results */}
+          <main className="lg:col-span-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {filteredResults.map((result, idx) => (
+                <article key={idx} className="bg-white rounded-2xl p-6 shadow hover:shadow-2xl transition transform hover:-translate-y-1 relative">
+                  <button onClick={() => toggleBookmark(result)} className="absolute right-4 top-4 text-slate-400 hover:text-sky-500">
+                    {isBookmarked(result) ? <FaBookmark className="text-sky-500" /> : <FaRegBookmark />}
                   </button>
 
-                  <div className="flex-1 flex items-center gap-2">
-                    <button onClick={() => navigate('/chat', { state: { paper: result } })} className="border border-blue-600 flex-1 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50">
+                  <h4 className="text-lg font-semibold mb-1">{result.title}</h4>
+                  <div className="text-sm text-slate-600 mb-3">{result.authors}</div>
+                  <p className="text-sm text-slate-700 mb-4 line-clamp-3">{result.description}</p>
+
+                  <div className="flex items-center justify-between text-sm text-slate-500">
+                    <div>{result.university || "Unknown University"}</div>
+                    <div>{result.year}</div>
+                  </div>
+
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      onClick={() => navigate('/chat', { state: { paper: result } })}
+                      className="px-5 py-2 rounded-lg bg-gradient-to-r from-sky-500 to-sky-400 text-white font-medium shadow hover:scale-[1.01] transition"
+                    >
                       Ask AI for Insights
                     </button>
-
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </main>
+                </article>
+              ))}
+            </div>
+          </main>
+        </div>
       </div>
     </div>
   );
