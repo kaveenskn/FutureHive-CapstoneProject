@@ -132,10 +132,9 @@ const SignIn = () => {
         {showSignUp ? (
           <>
             <div className="bg-gradient-to-r from-blue-500 to-blue-700 flex flex-col items-center justify-center w-1/2 p-10 text-white">
-              <h2 className="mb-4 text-2xl font-bold">Welcome Back!</h2>
+              <h2 className="mb-4 text-2xl font-bold">Welcome !</h2>
               <p className="mb-6 text-center">
-                If you already have an account, please login with your personal
-                info.
+                Enter your personal details and start your journey with us
               </p>
               <button
                 onClick={() => {
@@ -146,6 +145,9 @@ const SignIn = () => {
               >
                 SIGN IN
               </button>
+              <p className="mt-4 text-sm text-white text-center">
+                Already have an account? Click Sign In to log in.
+              </p>
             </div>
 
             <div className="flex flex-col items-center justify-center w-1/2 p-10">
@@ -338,7 +340,7 @@ const SignIn = () => {
             </div>
 
             <div className="bg-gradient-to-r from-blue-500 to-blue-700 flex flex-col items-center justify-center w-1/2 p-10 text-white">
-              <h2 className="mb-4 text-2xl font-bold">Hello, Friend!</h2>
+              <h2 className="mb-4 text-2xl font-bold">Welcome Back!</h2>
               <p className="mb-6 text-center">
                 Enter your personal details and start your journey with us
               </p>
@@ -351,6 +353,9 @@ const SignIn = () => {
               >
                 SIGN UP
               </button>
+              <p className="mt-4 text-sm text-white text-center">
+                New here? Click Sign Up to create an account.
+              </p>
             </div>
           </>
         )}
