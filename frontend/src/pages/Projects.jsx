@@ -4,7 +4,9 @@ import { toast } from 'react-toastify'
 
 export default function Projects(){
   const navigate = useNavigate()
-  const [projects, setProjects] = useState([])
+  const [projects, setProjects] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('projects') || '[]') } catch { return [] }
+  })
   const [form, setForm] = useState({ title: '', description: '', year: new Date().getFullYear(), type: 'Research', supervisor: '', mentor: '', leader: '', team: '' })
   const [isOpen, setIsOpen] = useState(false)
 
@@ -17,22 +19,34 @@ export default function Projects(){
     e.preventDefault()
     const teamArray = form.team.split(',').map(s => s.trim()).filter(Boolean)
     const newProject = { ...form, id: Date.now(), team: teamArray }
-    setProjects(p => [newProject, ...p])
+    setProjects(p => {
+      const next = [newProject, ...p]
+      localStorage.setItem('projects', JSON.stringify(next))
+      return next
+    })
     setForm({ title: '', description: '', year: new Date().getFullYear(), type: 'Research', supervisor: '', mentor: '', leader: '', team: '' })
     setIsOpen(false)
     toast.success('Project created')
   }
 
+  function handleDelete(id){
+    setProjects(prev => {
+      const next = prev.filter(x => x.id !== id)
+      localStorage.setItem('projects', JSON.stringify(next))
+      return next
+    })
+  }
+
   return (
     <>
     <div className="min-h-screen bg-gradient-to-b from-white via-sky-50 to-white text-slate-900">
-      <div className="max-w-5xl mx-auto px-4 py-10">
+      <div className="max-w-7xl mx-auto px-6 py-10">
         <header className="mb-6">
           <h1 className="text-3xl font-extrabold">Your Projects</h1>
           <p className="text-slate-600 mt-2">Start a new project or manage your existing ones. Projects are private to your account.</p>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl p-5 shadow-sm flex flex-col h-full justify-between">
               <div>
@@ -46,7 +60,7 @@ export default function Projects(){
             </div>
           </div>
 
-          <section className="lg:col-span-2">
+          <section className="lg:col-span-3">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold">My Projects</h3>
               <div className="text-sm text-slate-500">{projects.length} projects</div>
@@ -72,8 +86,8 @@ export default function Projects(){
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                      <button onClick={() => navigate('/projects') } className="px-3 py-1 border rounded-md text-sm">Open</button>
-                      <button onClick={() => setProjects(prev => prev.filter(x => x.id !== p.id))} className="px-3 py-1 text-sm text-red-600">Delete</button>
+                      <button onClick={() => navigate(`/projects/${p.id}`) } className="px-3 py-1 border rounded-md text-sm">Open</button>
+                      <button onClick={() => handleDelete(p.id)} className="px-3 py-1 text-sm text-red-600">Delete</button>
                     </div>
                   </div>
                 </article>

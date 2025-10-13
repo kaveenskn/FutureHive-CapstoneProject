@@ -11,6 +11,7 @@ import IdeaGenerator from "./pages/IdeaGenerator.jsx";
 import Mentors from "./pages/Mentors.jsx";
 import ResearchHub from "./pages/ResearchHub.jsx";
 import Projects from "./pages/Projects.jsx";
+import ProjectDetails from "./pages/ProjectDetails.jsx";
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         <Route path="/ideas" element={<IdeaGenerator />} />
         <Route path="/mentors" element={<Mentors />} />
   <Route path="/projects" element={<Projects />} />
+    <Route path="/projects/:id" element={<ProjectDetails />} />
         <Route path="/researchhub" element={<ResearchHub />} />
       </Routes>
       <ToastContainer />
