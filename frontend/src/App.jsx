@@ -12,6 +12,7 @@ import Mentors from "./pages/Mentors.jsx";
 import ResearchHub from "./pages/ResearchHub.jsx";
 import Projects from "./pages/Projects.jsx";
 import ProjectDetails from "./pages/ProjectDetails.jsx";
+import TopicSpark from "./pages/TopicSpark.jsx";
 
 function App() {
   return (
@@ -24,9 +25,10 @@ function App() {
         <Route path="/chat" element={<Chatbot />} />
         <Route path="/ideas" element={<IdeaGenerator />} />
         <Route path="/mentors" element={<Mentors />} />
-  <Route path="/projects" element={<Projects />} />
-    <Route path="/projects/:id" element={<ProjectDetails />} />
+        <Route path="/projects" element={<Projects />} />
+        <Route path="/projects/:id" element={<ProjectDetails />} />
         <Route path="/researchhub" element={<ResearchHub />} />
+        <Route path="/topicspark" element={<TopicSpark />} />
       </Routes>
       <ToastContainer />
     </>
