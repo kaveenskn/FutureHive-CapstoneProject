@@ -1,11 +1,16 @@
 import React from "react";
+import TopicSparkHero from "../components/TopicSparkHero";
+import TopicSparkSidebar from "../components/ToicSparkSidebar";
 
-function TopicSpark() {
+const TopicSpark = () => {
   return (
-    <div>
-      <h1>TopicSpark Page</h1>
+    <div className="bg-gray-50 min-h-screen">
+      <div className="flex">
+        <TopicSparkSidebar />
+        <TopicSparkHero />
+      </div>
     </div>
   );
-}
+};
 
 export default TopicSpark;
