@@ -1,13 +1,13 @@
 import React from "react";
-import TopicSparkHero from "../components/TopicSparkHero";
 import TopicSparkSidebar from "../components/ToicSparkSidebar";
+import TopicSparkBody from "../components/TopicSparkBody";
 
 const TopicSpark = () => {
   return (
     <div className="bg-gray-50 min-h-screen">
       <div className="flex">
         <TopicSparkSidebar />
-        <TopicSparkHero />
+        <TopicSparkBody />
       </div>
     </div>
   );
