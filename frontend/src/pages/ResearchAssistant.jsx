@@ -2,6 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaBookmark, FaRegBookmark } from "react-icons/fa";
 import ResearchHub from "./ResearchHub";
+import { db, auth } from '../components/Firebase';
+import { collection, doc, setDoc, deleteDoc } from "firebase/firestore";
+import Bookmarks from "./Bookmarks";
+
 
 const YEARS = ["all", "2024", "2023", "2022", "2021", "2020"];
 const TYPES = ["all", "Research", "Capstone", "Community"];
@@ -13,10 +17,20 @@ const ResearchAssistant = () => {
   const [filters, setFilters] = useState({ year: "all", type: "all" });
   const [bookmarks, setBookmarks] = useState([]);
 
+  // Map UI types to backend collection types
+  const mapTypeForBackend = (uiType) => {
+    if (!uiType) return "research";
+    const t = String(uiType).toLowerCase();
+    if (t === "capstone") return "capstone";
+    // default to research for 'all', 'research', 'community', etc.
+    return "research";
+  };
+
   useEffect(() => {
     const fetchDefault = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:5000/default");
+        const type = mapTypeForBackend(filters.type);
+        const res = await fetch(`http://127.0.0.1:5000/default?type=${type}`);
         if (res.ok) {
           const data = await res.json();
           setResults(data.results || []);
@@ -26,7 +40,11 @@ const ResearchAssistant = () => {
       }
     };
     fetchDefault();
-  }, []);
+  }, [filters.type]);
+
+
+
+
 
   const handleSearch = async () => {
     if (!query.trim()) return;
@@ -34,7 +52,7 @@ const ResearchAssistant = () => {
       const res = await fetch("http://127.0.0.1:5000/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({ query, type: mapTypeForBackend(filters.type) }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -49,17 +67,33 @@ const ResearchAssistant = () => {
 
   const filteredResults = results.filter((r) => {
     const matchYear = filters.year === "all" || String(r.year) === String(filters.year);
-    const matchType = filters.type === "all" || r.type === filters.type;
+    // Backend currently doesn't always include a `type` field. If it exists, compare
+    // case-insensitively; otherwise assume the backend already returned the
+    // correct collection for the selected type.
+    const matchType =
+      filters.type === "all" ||
+      (r.type ? String(r.type).toLowerCase() === String(filters.type).toLowerCase() : true);
     return matchYear && matchType;
   });
 
-  const makeKey = (paper) => `${paper.title}||${paper.year}`;
+  // Use a URL-safe encoded key so Firestore document IDs are safe
+  const makeKey = (paper) => encodeURIComponent(`${paper.title}||${paper.year}`);
   const isBookmarked = (paper) => bookmarks.includes(makeKey(paper));
-  const toggleBookmark = (paper) => {
-    const key = makeKey(paper);
-    setBookmarks((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [key, ...prev]));
-  };
 
+  const toggleBookmark =async (paper) => {
+    if (!auth.currentUser) return;
+
+    const key = makeKey(paper);
+    const ref=doc(db,"users",auth.currentUser.uid,"bookmarks",key)
+
+    if(bookmarks.includes(key)){
+      await deleteDoc(ref)
+      setBookmarks(prev => prev.filter(k => k !== key));}
+    else{
+      await setDoc(ref,paper)
+      setBookmarks(prev => [key, ...prev]);
+    };
+  }
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-sky-50 to-white text-slate-900">
       <ResearchHub />

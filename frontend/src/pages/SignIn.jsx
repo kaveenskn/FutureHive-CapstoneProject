@@ -16,6 +16,10 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { auth } from "../components/Firebase";
+
+
+
+
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showSignUp, setShowSignUp] = useState(true);

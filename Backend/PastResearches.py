@@ -23,6 +23,7 @@ print("Columns in the dataframe:", df.columns)
 
 # Fill missing values with default values
 df.fillna("N/A", inplace=True)
+df1.fillna("N/A", inplace=True)
 
 # ----------------------------
 # Step 2: Create chunk text per project
@@ -118,6 +119,7 @@ def search_projects(user_query, collection_type='research'):
             "authors": doc.metadata.get("Author", ""),
             "description": doc.metadata.get("Abstract", ""),
             "year": doc.metadata.get("Year", ""),
+            "type": collection_type,
             
         })
     return formatted_results
@@ -171,6 +173,7 @@ def get_default_projects(collection_type='research', limit=5):
             "authors": row["Author"],
             "description": row["Abstract"],
             "year": row["Year"],
+            "type": collection_type,
         })
     return default_results
 
