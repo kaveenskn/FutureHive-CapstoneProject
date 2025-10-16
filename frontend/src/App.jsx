@@ -12,7 +12,9 @@ import Mentors from "./pages/Mentors.jsx";
 import ResearchHub from "./pages/ResearchHub.jsx";
 import Projects from "./pages/Projects.jsx";
 import ProjectDetails from "./pages/ProjectDetails.jsx";
-import Bookmarks from "./pages/Bookmarks.jsx";
+
+import TopicSpark from "./pages/TopicSpark.jsx";
+
 
 function App() {
   return (
@@ -28,7 +30,9 @@ function App() {
         <Route path="/projects" element={<Projects />} />
         <Route path="/projects/:id" element={<ProjectDetails />} />
         <Route path="/researchhub" element={<ResearchHub />} />
-        <Route path="/bookmarks" element={<Bookmarks />} />
+
+        <Route path="/topicspark" element={<TopicSpark />} />
+
       </Routes>
       <ToastContainer />
     </>
