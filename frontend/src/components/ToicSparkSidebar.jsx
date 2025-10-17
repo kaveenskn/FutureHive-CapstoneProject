@@ -48,7 +48,7 @@ const TopicSparkSidebar = () => {
   ];
 
   return (
-    <aside className="w-80 min-h-screen overflow-y-auto bg-white border-r border-gray-200 shadow-sm">
+    <aside className="w-80 min-h-screen overflow-y-auto bg-white/80 backdrop-blur-sm border-r border-blue-200 shadow-sm">
       <div className="p-6">
         <div className="mb-8">
           <h2 className="mb-4 text-lg font-bold text-gray-900">
@@ -58,10 +58,10 @@ const TopicSparkSidebar = () => {
             {topResearchers.map((researcher, index) => (
               <div
                 key={index}
-                className="bg-gray-50 hover:bg-gray-100 flex items-center justify-between p-3 transition-colors rounded-lg"
+                className="bg-blue-50 hover:bg-blue-100 flex items-center justify-between p-3 transition-colors rounded-lg"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center w-10 h-10 text-sm font-semibold text-white rounded-full">
+                  <div className="bg-blue-600 flex items-center justify-center w-10 h-10 text-sm font-semibold text-white rounded-full">
                     {researcher.initials}
                   </div>
                   <div>
@@ -88,7 +88,7 @@ const TopicSparkSidebar = () => {
             {mostViewed.map((item, index) => (
               <div
                 key={index}
-                className="bg-gray-50 hover:bg-gray-100 flex items-center justify-between p-3 transition-colors rounded-lg"
+                className="bg-blue-50 hover:bg-blue-100 flex items-center justify-between p-3 transition-colors rounded-lg"
               >
                 <div className="flex-1">
                   <h3 className="mb-1 text-sm font-medium text-gray-900">
@@ -106,7 +106,7 @@ const TopicSparkSidebar = () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl p-4 text-white">
+        <div className="bg-blue-600 rounded-xl p-4 text-white shadow-md">
           <h3 className="mb-2 text-sm font-bold">Research Community</h3>
           <div className="grid grid-cols-2 gap-4 text-center">
             <div>
@@ -118,7 +118,7 @@ const TopicSparkSidebar = () => {
               <div className="opacity-90 text-xs">Projects</div>
             </div>
           </div>
-          <button className="hover:bg-gray-100 w-full py-2 mt-3 text-xs font-semibold text-blue-600 transition-colors bg-white rounded-lg">
+          <button className="hover:bg-blue-50 w-full py-2 mt-3 text-xs font-semibold text-blue-600 transition-colors bg-white rounded-lg">
             Join Community
           </button>
         </div>
@@ -138,7 +138,7 @@ const TopicSparkSidebar = () => {
             ].map((topic, index) => (
               <span
                 key={index}
-                className="hover:bg-blue-200 px-3 py-1 text-xs font-medium text-blue-600 transition-colors bg-blue-100 rounded-full cursor-pointer"
+                className="hover:bg-blue-600 hover:text-white px-3 py-1 text-xs font-medium text-blue-600 transition-colors bg-blue-100 rounded-full cursor-pointer"
               >
                 {topic}
               </span>

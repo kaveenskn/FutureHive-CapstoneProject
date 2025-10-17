@@ -28,7 +28,7 @@ const TopicSparkHero = () => {
           <h1 className="md:text-5xl mb-4 text-4xl font-bold text-gray-900">
             Explore Trending Topics in
           </h1>
-          <h1 className="md:text-5xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text mb-6 text-4xl font-bold text-transparent">
+          <h1 className="md:text-5xl mb-6 text-4xl font-bold text-blue-600">
             Research & Capstone Projects
           </h1>
           <p className="max-w-3xl mx-auto mb-8 text-xl text-gray-600">
@@ -44,7 +44,7 @@ const TopicSparkHero = () => {
               className="rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full px-6 py-4 text-lg transition-all border border-gray-300 shadow-sm outline-none"
             />
             <div className="right-3 top-1/2 absolute transform -translate-y-1/2">
-              <button className="hover:bg-blue-600 p-2 text-white transition-colors bg-blue-500 rounded-lg">
+              <button className="hover:bg-blue-700 p-2 text-white transition-colors bg-blue-600 rounded-lg">
                 <svg
                   className="w-5 h-5"
                   fill="none"
@@ -75,8 +75,8 @@ const TopicSparkHero = () => {
                   onClick={() => setSelectedType(type.id)}
                   className={`px-6 py-3 rounded-lg border transition-all ${
                     selectedType === type.id
-                      ? "bg-blue-500 text-white border-blue-500 shadow-md"
-                      : "bg-white text-gray-700 border-gray-300 hover:border-blue-500 hover:text-blue-600"
+                      ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                      : "bg-white text-gray-700 border-gray-300 hover:border-blue-600 hover:text-blue-600"
                   }`}
                 >
                   {type.label}
@@ -96,8 +96,8 @@ const TopicSparkHero = () => {
                   onClick={() => setSelectedTopic(topic.id)}
                   className={`p-4 rounded-xl border text-left transition-all ${
                     selectedTopic === topic.id
-                      ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white border-transparent shadow-lg transform scale-105"
-                      : "bg-white text-gray-700 border-gray-300 hover:border-blue-500 hover:shadow-md"
+                      ? "bg-blue-600 text-white border-blue-600 shadow-lg transform scale-105"
+                      : "bg-white text-gray-700 border-gray-300 hover:border-blue-600 hover:shadow-md"
                   }`}
                 >
                   <span className="font-medium">{topic.label}</span>

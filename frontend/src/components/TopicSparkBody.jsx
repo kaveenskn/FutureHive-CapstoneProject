@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 const TopicSparkBody = () => {
   const [selectedType, setSelectedType] = useState("all");
   const [selectedTopic, setSelectedTopic] = useState("all");
-  const [projects, setProjects] = useState([ ]);
+  const [projects, setProjects] = useState([]);
 
   const types = [
     { id: "all", label: "All Types" },
@@ -22,37 +22,36 @@ const TopicSparkBody = () => {
     { id: "healthcare", label: "Healthcare Tech" },
   ];
 
-useEffect(() => {
-  const exploretopics = async () => {
-    try {
-      // chat.py /topicspark runs on port 8000
-      const res = await fetch(`http://127.0.0.1:8000/topicspark`);
-      const data = await res.json();
-     
-      const topics = data.topics || [];
-     
-      const mapped = topics.map((t, idx) => ({
-        id: t.id || encodeURIComponent((t.title || '') + '-' + idx),
-        title: t.title || 'Untitled',
-        description: t.description || '',
-        // Normalize type for the UI badges (Title case)
-        type: t.type ? String(t.type).charAt(0).toUpperCase() + String(t.type).slice(1) : 'Research',
-        tags: t.tags || [],
-        isHot: t.isHot || false,
-      }));
-      setProjects(mapped);
-    } catch (e) {
-      console.error(e);
-      setProjects([]);
-    }
-  };
+  useEffect(() => {
+    const exploretopics = async () => {
+      try {
+        // chat.py /topicspark runs on port 8000
+        const res = await fetch(`http://127.0.0.1:8000/topicspark`);
+        const data = await res.json();
 
-  exploretopics();
-  // run only on mount
-}, []);
+        const topics = data.topics || [];
 
+        const mapped = topics.map((t, idx) => ({
+          id: t.id || encodeURIComponent((t.title || "") + "-" + idx),
+          title: t.title || "Untitled",
+          description: t.description || "",
+          // Normalize type for the UI badges (Title case)
+          type: t.type
+            ? String(t.type).charAt(0).toUpperCase() + String(t.type).slice(1)
+            : "Research",
+          tags: t.tags || [],
+          isHot: t.isHot || false,
+        }));
+        setProjects(mapped);
+      } catch (e) {
+        console.error(e);
+        setProjects([]);
+      }
+    };
 
-
+    exploretopics();
+    // run only on mount
+  }, []);
 
   return (
     <main className="flex-1 p-6">
@@ -62,7 +61,7 @@ useEffect(() => {
           <h1 className="md:text-5xl mb-4 text-4xl font-bold text-gray-900">
             Explore Trending Topics in
           </h1>
-          <h1 className="md:text-5xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text mb-6 text-4xl font-bold text-transparent">
+          <h1 className="md:text-5xl mb-6 text-4xl font-bold text-blue-600">
             Research & Capstone Projects
           </h1>
           <p className="max-w-3xl mx-auto mb-8 text-xl text-gray-600">
@@ -78,7 +77,7 @@ useEffect(() => {
               className="rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full px-6 py-4 text-lg transition-all border border-gray-300 shadow-sm outline-none"
             />
             <div className="right-3 top-1/2 absolute transform -translate-y-1/2">
-              <button className="hover:bg-blue-600 p-2 text-white transition-colors bg-blue-500 rounded-lg">
+              <button className="hover:bg-blue-700 p-2 text-white transition-colors bg-blue-600 rounded-lg">
                 <svg
                   className="w-5 h-5"
                   fill="none"
@@ -109,8 +108,8 @@ useEffect(() => {
                   onClick={() => setSelectedType(type.id)}
                   className={`px-6 py-3 rounded-lg border transition-all ${
                     selectedType === type.id
-                      ? "bg-blue-500 text-white border-blue-500 shadow-md"
-                      : "bg-white text-gray-700 border-gray-300 hover:border-blue-500 hover:text-blue-600"
+                      ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                      : "bg-white text-gray-700 border-gray-300 hover:border-blue-600 hover:text-blue-600"
                   }`}
                 >
                   {type.label}
@@ -130,8 +129,8 @@ useEffect(() => {
                   onClick={() => setSelectedTopic(topic.id)}
                   className={`p-4 rounded-xl border text-left transition-all ${
                     selectedTopic === topic.id
-                      ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white border-transparent shadow-lg transform scale-105"
-                      : "bg-white text-gray-700 border-gray-300 hover:border-blue-500 hover:shadow-md"
+                      ? "bg-blue-600 text-white border-blue-600 shadow-lg transform scale-105"
+                      : "bg-white text-gray-700 border-gray-300 hover:border-blue-600 hover:shadow-md"
                   }`}
                 >
                   <span className="font-medium">{topic.label}</span>
@@ -191,7 +190,7 @@ useEffect(() => {
                 {project.description}
               </p>
 
-              <button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 hover:scale-105 w-full px-4 py-3 font-semibold text-white transition-all duration-300 transform rounded-lg mb-0">
+              <button className="bg-blue-600 hover:bg-blue-700 hover:scale-105 w-full px-4 py-3 font-semibold text-white transition-all duration-300 transform rounded-lg shadow-md mb-0">
                 Explore Projects
               </button>
             </div>
@@ -199,7 +198,7 @@ useEffect(() => {
         </div>
 
         <div className="mt-12 text-center">
-          <button className="hover:text-blue-600 hover:border-blue-600 px-8 py-3 font-semibold text-blue-500 transition-colors bg-white border border-blue-500 rounded-lg">
+          <button className="hover:bg-blue-50 px-8 py-3 font-semibold text-blue-600 transition-colors bg-white border border-blue-600 rounded-lg shadow-md">
             Load More Projects
           </button>
         </div>
