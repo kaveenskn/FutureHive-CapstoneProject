@@ -34,7 +34,7 @@ const Navbar = () => {
         <div className="hidden md:flex items-center gap-6">
           <button
             className="px-4 py-2 text-gray-700 hover:text-blue-600 font-semibold"
-            onClick={() => navigate("/research")}
+            onClick={() => navigate("/researchhub")}
           >
             Search
           </button>

@@ -1,7 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Homepage from "./pages/Homepage.jsx";
-import ResearchAssistant from "./pages/ResearchAssistant.jsx";
+import ResearchAssistant from "./components/ResearchAssistant.jsx";
 import SignIn from "./pages/SignIn.jsx";
 import Navbar from "./components/Navbar.jsx";
 import Chatbot from "./pages/Chatbot.jsx";
@@ -14,6 +14,7 @@ import Projects from "./pages/Projects.jsx";
 import ProjectDetails from "./pages/ProjectDetails.jsx";
 
 import TopicSpark from "./pages/TopicSpark.jsx";
+import PastResearch from "./pages/PastResearch.jsx";
 
 
 function App() {
@@ -22,7 +23,7 @@ function App() {
       <Navbar />
       <Routes>
         <Route path="/" element={<Homepage />} />
-        <Route path="/research" element={<ResearchAssistant />} />
+        <Route path="/research" element={<PastResearch />} />
         <Route path="/signin" element={<SignIn />} />
         <Route path="/chat" element={<Chatbot />} />
         <Route path="/ideas" element={<IdeaGenerator />} />

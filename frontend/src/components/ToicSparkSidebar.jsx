@@ -48,7 +48,7 @@ const TopicSparkSidebar = () => {
   ];
 
   return (
-    <aside className="w-80 min-h-screen overflow-y-auto bg-white/80 backdrop-blur-sm border-r border-blue-200 shadow-sm">
+    <aside className="hidden lg:block lg:sticky lg:top-20 overflow-y-auto bg-white/80 backdrop-blur-sm border-r border-blue-200 shadow-sm h-full min-h-0 w-64">
       <div className="p-6">
         <div className="mb-8">
           <h2 className="mb-4 text-lg font-bold text-gray-900">

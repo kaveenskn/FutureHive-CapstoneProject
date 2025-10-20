@@ -1,6 +1,9 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 const ResearchHub = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center min-h-screen p-4">
       <div className="w-full max-w-4xl">
@@ -20,11 +23,17 @@ const ResearchHub = () => {
           </div>
 
           <div className="sm:flex-row flex flex-col items-center justify-center gap-4">
-            <button className="hover:bg-blue-700 hover:scale-105 hover:shadow-xl sm:w-auto w-full px-8 py-4 text-lg font-semibold text-white transition-all duration-300 transform bg-blue-600 rounded-lg shadow-lg">
+            <button
+              onClick={() => navigate("/research")} /* adjust path if your route differs */
+              className="hover:bg-blue-700 hover:scale-105 hover:shadow-xl sm:w-auto w-full px-8 py-4 text-lg font-semibold text-white transition-all duration-300 transform bg-blue-600 rounded-lg shadow-lg"
+            >
               View Past Researches
             </button>
 
-            <button className="hover:bg-blue-600 hover:text-white hover:scale-105 sm:w-auto w-full px-8 py-4 text-lg font-semibold text-blue-600 transition-all duration-300 transform border-2 border-blue-600 rounded-lg">
+            <button
+              onClick={() => navigate("/topicspark")} /* adjust path if your route differs */
+              className="hover:bg-blue-600 hover:text-white hover:scale-105 sm:w-auto w-full px-8 py-4 text-lg font-semibold text-blue-600 transition-all duration-300 transform border-2 border-blue-600 rounded-lg"
+            >
               Explore Trending Topics
             </button>
           </div>
