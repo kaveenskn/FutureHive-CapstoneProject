@@ -9,9 +9,11 @@ const PastResearch = () => {
         {/* Sidebar */}
         <TopicSparkSidebar />
 
-        {/* Main content — should expand to fill the rest */}
-        <div className="flex-1 flex ">
-          <ResearchAssistant />
+        {/* Main content — centered in remaining space */}
+        <div className="flex-1 flex justify-center">
+          <div className="w-full max-w-4xl px-2">
+            <ResearchAssistant />
+          </div>
         </div>
       </div>
     </div>

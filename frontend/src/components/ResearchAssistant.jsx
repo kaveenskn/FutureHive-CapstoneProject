@@ -89,20 +89,16 @@ const ResearchAssistant = () => {
   };
 
   return (
-  <div className="w-full flex justify-center bg-gradient-to-b from-[#f8fbff] to-[#eef6ff]">
-  <div className="w-full max-w-6xl px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
-        
-
-          {/* Main Section */}
-          <main className="lg:col-span-4">
+  <div className="w-full flex justify-center ">
+  <div className="w-full h-full max-w-6xl px-8 py-8">
+        <div className="flex justify-center w-full">
+           <main className="w-full max-w-4xl text-center">
             <header className="mb-8 text-center">
               <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900">
-                Search for Research Papers
+                Explore Past Researches & Project Ideas
               </h1>
               <p className="mt-2 text-lg text-slate-600">
-                Explore papers, then ask the AI for focused insights on any
-                selected paper.
+                Browse previous research works and innovative project ideas. Use filters or search to find inspiration and details for your next academic or creative endeavor.
               </p>
             </header>
 
@@ -141,7 +137,7 @@ const ResearchAssistant = () => {
             {/* Filter Buttons */}
             <div className="max-w-6xl mx-auto mb-8">
               {/* Year Filter */}
-              <div className="mb-6">
+              <div className="mb-6 text-left">
                 <h3 className="mb-3 text-sm font-semibold tracking-wider text-gray-500 uppercase">
                   Year
                 </h3>
@@ -152,8 +148,8 @@ const ResearchAssistant = () => {
                       onClick={() => handleFilterChange("year", year)}
                       className={`px-5 py-2.5 rounded-lg border transition-all ${
                         filters.year === year
-                          ? "bg-sky-600 text-white border-sky-600 shadow-md"
-                          : "bg-white text-gray-700 border-gray-300 hover:border-sky-600 hover:text-sky-600"
+                          ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                          : "bg-white text-gray-700 border-gray-300 hover:border-blue-600 hover:text-blue-600"
                       }`}
                     >
                       {year === "all" ? "All Years" : year}
@@ -164,7 +160,7 @@ const ResearchAssistant = () => {
 
               {/* Project Type Filter */}
               <div>
-                <h3 className="mb-3 text-sm font-semibold tracking-wider text-gray-500 uppercase">
+                <h3 className="mb-3 text-sm font-semibold tracking-wider text-gray-500 uppercase text-left">
                   Project Type
                 </h3>
                 <div className="flex flex-wrap gap-3">
@@ -174,8 +170,8 @@ const ResearchAssistant = () => {
                       onClick={() => handleFilterChange("type", type)}
                       className={`px-5 py-2.5 rounded-lg border transition-all ${
                         filters.type === type
-                          ? "bg-sky-600 text-white border-sky-600 shadow-md"
-                          : "bg-white text-gray-700 border-gray-300 hover:border-sky-600 hover:text-sky-600"
+                          ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                          : "bg-white text-gray-700 border-gray-300 hover:border-blue-600 hover:text-blue-600"
                       }`}
                     >
                       {type === "all" ? "All Types" : type}
