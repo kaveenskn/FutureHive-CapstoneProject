@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
+import { ClipboardPlus, Flag, BarChart3 } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function Projects(){
   const navigate = useNavigate()
@@ -37,25 +39,86 @@ export default function Projects(){
     })
   }
 
+
+
+const cards = [
+    {
+      icon: <ClipboardPlus className="w-10 h-10 text-blue-500" />,
+      title: "Add Projects",
+      description:
+        "Create and organize projects effortlessly. Add project details, set start and end dates, and assign team members to keep everything structured.",
+    },
+    {
+      icon: <Flag className="w-10 h-10 text-green-500" />,
+      title: "Add Milestones & Tasks",
+      description:
+        "Break down your project into milestones and specific tasks. Assign deadlines and responsibilities for better tracking and accountability.",
+    },
+    {
+      icon: <BarChart3 className="w-10 h-10 text-purple-500" />,
+      title: "Track Progress",
+      description:
+        "Monitor your project's performance using visual progress bars and insights. Stay on top of milestones and ensure timely completion.",
+    },
+  ];
+
+
+
+
+
+
   return (
     <>
-    <div className="min-h-screen bg-gradient-to-b from-white via-sky-50 to-white text-slate-900">
-      <div className="max-w-7xl mx-auto px-6 py-10">
-        <header className="mb-6">
-          <h1 className="text-3xl font-extrabold">Your Projects</h1>
-          <p className="text-slate-600 mt-2">Start a new project or manage your existing ones. Projects are private to your account.</p>
+    <div className="min-h-screen bg-gradient-to-b from-blue-100 to-blue-50 text-slate-900">
+      <div className="max-w-7xl mx-auto px-6 py-10 ">
+        <header className="mb-6 text-center mt-9">
+          <h1 className="text-5xl font-extrabold">Manage Your <br /><span className='text-blue-600'>Projects</span></h1>
+          <p className="text-slate-600 mt-2 text-xl pt-2">Start a new project or manage your existing ones. Projects are private to your account.</p>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+
+
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-6 max-w-6xl mx-auto mt-20">
+        {cards.map((card, index) => {
+          const isLast = index === cards.length - 1;
+          const containerClass = isLast
+            ? "p-8 rounded-2xl shadow-lg text-center bg-gradient-to-r from-blue-600 to-sky-500 text-white"
+            : "bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl text-center border border-gray-100";
+
+          // clone icon to override color when it's the last card
+          const icon = isLast
+            ? React.cloneElement(card.icon, { className: "w-10 h-10 text-white" })
+            : card.icon;
+
+          const titleClass = isLast ? "text-xl font-semibold text-white mb-3" : "text-xl font-semibold text-gray-800 mb-3";
+          const descClass = isLast ? "text-white text-sm" : "text-gray-600 text-sm";
+
+          return (
+            <motion.div
+              key={index}
+              whileHover={{ scale: 1.05, rotate: 1 }}
+              transition={{ type: "spring", stiffness: 200, damping: 10 }}
+              className={containerClass}
+            >
+              <div className="flex justify-center mb-4">{icon}</div>
+              <h3 className={titleClass}>{card.title}</h3>
+              <p className={descClass}>{card.description}</p>
+            </motion.div>
+          );
+        })}
+      </div>
+
+
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mt-20">
+          
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl p-5 shadow-sm flex flex-col h-full justify-between">
-              <div>
-                <h3 className="font-semibold mb-3">Your Projects</h3>
-                <p className="text-sm text-slate-600">Create and manage your projects. Projects are private to your account.</p>
-              </div>
+              <h1>Add Your Projects</h1>
               <div className="mt-4">
-                <button onClick={() => setIsOpen(true)} className="w-full px-4 py-3 bg-gradient-to-r from-sky-500 to-sky-400 text-white rounded-md shadow">Add New Project</button>
-                <button onClick={() => navigate('/research')} className="w-full mt-3 px-4 py-2 border rounded-md">Explore Papers</button>
+                <button onClick={() => setIsOpen(true)} className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-sky-400 text-white rounded-md shadow">Add New Project</button>
+                
               </div>
             </div>
           </div>

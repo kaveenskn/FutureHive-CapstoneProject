@@ -92,8 +92,8 @@ const ResearchAssistant = () => {
   <div className="w-full flex justify-center ">
   <div className="w-full h-full max-w-6xl px-8 py-8">
         <div className="flex justify-center w-full">
-           <main className="w-full max-w-4xl text-center">
-            <header className="mb-8 text-center">
+           <main className="w-full text-center">
+            <header className="mb-8 text-center max-w-3xl mx-auto">
               <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900">
                 Explore Past Researches & Project Ideas
               </h1>
@@ -135,7 +135,7 @@ const ResearchAssistant = () => {
             </div>
 
             {/* Filter Buttons */}
-            <div className="max-w-6xl mx-auto mb-8">
+            <div className="max-w-3xl mx-auto mb-8">
               {/* Year Filter */}
               <div className="mb-6 text-left">
                 <h3 className="mb-3 text-sm font-semibold tracking-wider text-gray-500 uppercase">
@@ -181,50 +181,60 @@ const ResearchAssistant = () => {
               </div>
             </div>
 
-            {/* Results */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {filteredResults.map((result, idx) => (
-                <article
-                  key={idx}
-                  className="bg-white rounded-2xl p-6 shadow hover:shadow-2xl transition transform hover:-translate-y-1 relative"
-                >
-                  <button
-                    onClick={() => toggleBookmark(result)}
-                    className="absolute right-4 top-4 text-slate-400 hover:text-sky-500"
-                  >
-                    {isBookmarked(result) ? (
-                      <FaBookmark className="text-sky-500" />
-                    ) : (
-                      <FaRegBookmark />
-                    )}
-                  </button>
-
-                  <h4 className="text-lg font-semibold mb-1">{result.title}</h4>
-                  <div className="text-sm text-slate-600 mb-3">
-                    {result.authors}
-                  </div>
-                  <p className="text-sm text-slate-700 mb-4 line-clamp-3">
-                    {result.description}
-                  </p>
-
-                  <div className="flex items-center justify-between text-sm text-slate-500">
-                    <div>{result.university || "Unknown University"}</div>
-                    <div>{result.year}</div>
-                  </div>
-
-                  <div className="mt-4 flex justify-end">
-                    <button
-                      onClick={() =>
-                        navigate("/chat", { state: { paper: result } })
-                      }
-                      className="px-5 py-2 rounded-lg bg-gradient-to-r from-sky-500 to-sky-400 text-white font-medium shadow hover:scale-[1.01] transition"
+            {/* Results Section */}
+            <section className="mt-12 mb-8 bg-white/90 border border-blue-100 rounded-2xl shadow-lg w-full px-2 md:px-6 py-8 text-left">
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-blue-700">Results</h2>
+                <span className="text-sm text-slate-500">{filteredResults.length} found</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredResults.length === 0 ? (
+                  <div className="col-span-full text-center text-slate-500 py-12 text-lg">No results found. Try adjusting your search or filters.</div>
+                ) : (
+                  filteredResults.map((result, idx) => (
+                    <article
+                      key={idx}
+                      className="bg-white rounded-2xl p-6 shadow hover:shadow-2xl transition transform hover:-translate-y-1 relative border border-slate-100"
                     >
-                      Ask AI for Insights
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
+                      <button
+                        onClick={() => toggleBookmark(result)}
+                        className="absolute right-4 top-4 text-slate-400 hover:text-sky-500"
+                      >
+                        {isBookmarked(result) ? (
+                          <FaBookmark className="text-sky-500" />
+                        ) : (
+                          <FaRegBookmark />
+                        )}
+                      </button>
+
+                      <h4 className="text-lg font-semibold mb-1">{result.title}</h4>
+                      <div className="text-sm text-slate-600 mb-3">
+                        {result.authors}
+                      </div>
+                      <p className="text-sm text-slate-700 mb-4 line-clamp-3">
+                        {result.description}
+                      </p>
+
+                      <div className="flex items-center justify-between text-sm text-slate-500">
+                        <div>{result.university || "Unknown University"}</div>
+                        <div>{result.year}</div>
+                      </div>
+
+                      <div className="mt-4 flex justify-end">
+                        <button
+                          onClick={() =>
+                            navigate("/chat", { state: { paper: result } })
+                          }
+                          className="px-5 py-2 rounded-lg bg-gradient-to-r from-sky-500 to-sky-400 text-white font-medium shadow hover:scale-[1.01] transition"
+                        >
+                          Ask AI for Insights
+                        </button>
+                      </div>
+                    </article>
+                  ))
+                )}
+              </div>
+            </section>
           </main>
         </div>
       </div>

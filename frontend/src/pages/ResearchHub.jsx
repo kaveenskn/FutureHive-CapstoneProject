@@ -1,18 +1,19 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from 'framer-motion';
 
 const ResearchHub = () => {
   const navigate = useNavigate();
 
   return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center min-h-screen p-4">
-      <div className="w-full max-w-4xl">
-        <div className="rounded-2xl md:p-12 lg:p-16 p-8 bg-white shadow-xl">
+      <div className="w-full max-w-4xl ">
+        <div className="rounded-2xl md:p-12 lg:p-16 p-8">
           <div className="mb-12 text-center">
-            <h1 className="md:text-5xl lg:text-6xl mb-6 text-4xl font-bold leading-tight text-gray-800">
+            <h1 className="md:text-4xl lg:text-5xl mb-6 text-4xl font-extrabold leading-tight text-gray-800">
               Discover, Explore, and
               <br />
-              <span className="text-blue-600">Innovate</span> with FutureHive
+              <span className="text-blue-600">Innovate</span> 
               <br />
             </h1>
 
@@ -36,8 +37,41 @@ const ResearchHub = () => {
             >
               Explore Trending Topics
             </button>
-          </div>
+          </div>  
         </div>
+
+         {/* Informational cards */}
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <motion.div
+              whileHover={{ scale: 1.05, rotate: 1 }}
+              transition={{ type: "spring", stiffness: 200, damping: 10 }}
+              onClick={() => navigate('/research')}
+              className="cursor-pointer bg-gradient-to-r from-white to-blue-50 p-6 rounded-2xl shadow-xl hover:shadow-2xl transition flex flex-col justify-between"
+            >
+              <div>
+                <h3 className="text-2xl font-bold text-blue-700 mb-2">Past Papers Search</h3>
+                <p className="text-gray-600">Search and browse previous university research papers and project reports. Filter by year, type, and university to find inspiration quickly.</p>
+              </div>
+              <div className="mt-4 self-end">
+                <span className="inline-block px-3 py-2 bg-blue-100 text-blue-700 rounded-lg font-semibold shadow">Search Papers</span>
+              </div>
+            </motion.div>
+
+            <motion.div
+              whileHover={{ scale: 1.05, rotate: 1 }}
+              transition={{ type: "spring", stiffness: 200, damping: 10 }}
+              onClick={() => navigate('/topicspark')}
+              className="cursor-pointer bg-gradient-to-r from-blue-600 to-sky-400 p-6 rounded-2xl shadow-xl hover:shadow-2xl transition text-white flex flex-col justify-between"
+            >
+              <div>
+                <h3 className="text-2xl font-bold mb-2">Explore Trending Topics</h3>
+                <p className="text-white/90">Discover trending research topics and emerging project ideas curated from recent submissions and community activity.</p>
+              </div>
+              <div className="mt-4 self-end">
+                <span className="inline-block px-3 py-2 bg-white/20 text-white rounded-lg font-semibold shadow">Explore Topics</span>
+              </div>
+            </motion.div>
+          </div>
 
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-500">

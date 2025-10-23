@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+import { db } from "../components/Firebase"; 
 import {
   FaEnvelope,
   FaLock,
@@ -16,8 +18,6 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { auth } from "../components/Firebase";
-
-
 
 
 const SignIn = () => {
@@ -41,67 +41,94 @@ const SignIn = () => {
   };
 
   const handleEmailPasswordSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+  e.preventDefault();
+  setLoading(true);
+  setError("");
 
-    try {
-      if (showSignUp) {
-        const userCredential = await createUserWithEmailAndPassword(
-          auth,
-          formData.email,
-          formData.password
-        );
+  try {
+    if (showSignUp) {
+      // 🔹 1. Create user in Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
 
-        await updateProfile(userCredential.user, {
-          displayName: formData.name,
-        });
+      const user = userCredential.user;
 
-        console.log("User created successfully:", userCredential.user);
-        // Redirect to homepage after successful sign up
-        navigate("/", { replace: true });
-      } else {
-        const userCredential = await signInWithEmailAndPassword(
-          auth,
-          formData.email,
-          formData.password
-        );
-        console.log("User signed in successfully:", userCredential.user);
-        // Redirect to homepage after successful sign in
-        navigate("/", { replace: true });
-      }
-    } catch (error) {
-      console.error("Authentication error:", error);
-      setError(getErrorMessage(error.code));
-    } finally {
-      setLoading(false);
-    }
-  };
+      // 🔹 2. Set display name
+      await updateProfile(user, { displayName: formData.name });
 
-  const handleGoogleSignIn = async () => {
-    setLoading(true);
-    setError("");
-
-    try {
-      const provider = new GoogleAuthProvider();
-      provider.addScope("profile");
-      provider.addScope("email");
-
-      provider.setCustomParameters({
-        prompt: "select_account",
+      // 🔹 3. Save user in Firestore with default role
+      await setDoc(doc(db, "users", user.uid), {
+        name: formData.name,
+        email: formData.email,
+        role: "user", // 👈 Assign role automatically
+        createdAt: new Date(),
       });
 
-      const result = await signInWithPopup(auth, provider);
-      console.log("Google sign in successful:", result.user);
-      // Redirect to homepage after successful Google sign-in
+      console.log("User created with role 'user':", user.uid);
       navigate("/", { replace: true });
-    } catch (error) {
-      console.error("Google sign in error:", error);
-      setError(getErrorMessage(error.code));
-    } finally {
-      setLoading(false);
+    } else {
+      // 🔹 Login existing user
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
+
+      console.log("User signed in:", userCredential.user);
+      navigate("/", { replace: true });
     }
-  };
+  } catch (error) {
+    console.error("Authentication error:", error);
+    setError(getErrorMessage(error.code));
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+  const handleGoogleSignIn = async () => {
+  setLoading(true);
+  setError("");
+
+  try {
+    const provider = new GoogleAuthProvider();
+    provider.addScope("profile");
+    provider.addScope("email");
+    provider.setCustomParameters({ prompt: "select_account" });
+
+    // 🔹 1. Sign in with Google
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+
+    // 🔹 2. Check if user already exists in Firestore
+    const userDocRef = doc(db, "users", user.uid);
+    const userDoc = await getDoc(userDocRef);
+
+    // 🔹 3. If not, create it with default role = 'user'
+    if (!userDoc.exists()) {
+      await setDoc(userDocRef, {
+        name: user.displayName || "",
+        email: user.email,
+        role: "user", // 👈 Assign role automatically
+        createdAt: new Date(),
+      });
+      console.log("New Google user created with role 'user':", user.uid);
+    } else {
+      console.log("Google user already exists:", user.uid);
+    }
+
+    navigate("/", { replace: true });
+  } catch (error) {
+    console.error("Google sign in error:", error);
+    setError(getErrorMessage(error.code));
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const getErrorMessage = (errorCode) => {
     switch (errorCode) {

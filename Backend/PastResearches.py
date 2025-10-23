@@ -83,7 +83,7 @@ Research_vectorstore = Chroma.from_documents(
     embedding=embeddings_model,
     collection_name="researchprojects_database"
 )
-retriever = Research_vectorstore.as_retriever(search_kwargs={"k": 5})  # top 5 relevant chunks
+retriever = Research_vectorstore.as_retriever(search_kwargs={"k": 10})  # top 10 relevant chunks
 
 
 capstone_vectorstore=Chroma.from_documents(
@@ -92,13 +92,13 @@ capstone_vectorstore=Chroma.from_documents(
     collection_name="capstoneprojects_database"
 )
 
-retriever1=capstone_vectorstore.as_retriever(search_kwargs={"k":5})
+retriever1=capstone_vectorstore.as_retriever(search_kwargs={"k":10})
 
 # ----------------------------
 # Step 6: Function to search projects intelligently
 # ----------------------------
 def search_projects(user_query, collection_type='research'):
-    # Debug: Print the query being used
+   
     print(f"Query used: {user_query} (collection={collection_type})")
 
     # Choose the retriever depending on requested collection
@@ -156,7 +156,7 @@ def add_cors_headers(response):
     response.headers.setdefault('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     return response
 
-def get_default_projects(collection_type='research', limit=5):
+def get_default_projects(collection_type='research', limit=10):
     """
     Returns default projects from the selected collection.
     """
@@ -183,7 +183,7 @@ def get_default_projects(collection_type='research', limit=5):
 def default_api():
     try:
         t = request.args.get('type', 'research')
-        results = get_default_projects(collection_type=t, limit=5)
+        results = get_default_projects(collection_type=t, limit=10)
         return jsonify({"results": results}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
