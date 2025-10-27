@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaBookmark, FaRegBookmark } from "react-icons/fa";
-import TopicSparkSidebar from "../components/ToicSparkSidebar";
+
 import { db, auth } from "../components/Firebase";
 import { doc, setDoc, deleteDoc } from "firebase/firestore";
 

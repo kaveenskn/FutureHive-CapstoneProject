@@ -40,44 +40,55 @@ const SignIn = () => {
     if (error) setError("");
   };
 
+  
+
   const handleEmailPasswordSubmit = async (e) => {
   e.preventDefault();
   setLoading(true);
   setError("");
 
   try {
+    let user;
     if (showSignUp) {
-      // 🔹 1. Create user in Firebase Auth
+      // Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         formData.email,
         formData.password
       );
+      user = userCredential.user;
 
-      const user = userCredential.user;
-
-      // 🔹 2. Set display name
+      // Set display name
       await updateProfile(user, { displayName: formData.name });
 
-      // 🔹 3. Save user in Firestore with default role
+      // Save user in Firestore with default role
       await setDoc(doc(db, "users", user.uid), {
         name: formData.name,
         email: formData.email,
-        role: "user", // 👈 Assign role automatically
+        role: "user", // default role
         createdAt: new Date(),
       });
-
       console.log("User created with role 'user':", user.uid);
-      navigate("/", { replace: true });
     } else {
-      // 🔹 Login existing user
+      // Login existing user
       const userCredential = await signInWithEmailAndPassword(
         auth,
         formData.email,
         formData.password
       );
+      user = userCredential.user;
+      console.log("User signed in:", user.uid);
+    }
 
-      console.log("User signed in:", userCredential.user);
+    // 🔹 Fetch role from Firestore
+    const docRef = doc(db, "users", user.uid);
+    const docSnap = await getDoc(docRef);
+    const role = docSnap.exists() ? docSnap.data().role : "user";
+
+    // 🔹 Navigate based on role
+    if (role === "admin") {
+      navigate("/admin", { replace: true });
+    } else {
       navigate("/", { replace: true });
     }
   } catch (error) {
@@ -89,7 +100,7 @@ const SignIn = () => {
 };
 
 
-  const handleGoogleSignIn = async () => {
+const handleGoogleSignIn = async () => {
   setLoading(true);
   setError("");
 
@@ -99,28 +110,33 @@ const SignIn = () => {
     provider.addScope("email");
     provider.setCustomParameters({ prompt: "select_account" });
 
-    // 🔹 1. Sign in with Google
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
 
-    // 🔹 2. Check if user already exists in Firestore
+    // Check if user already exists in Firestore
     const userDocRef = doc(db, "users", user.uid);
     const userDoc = await getDoc(userDocRef);
 
-    // 🔹 3. If not, create it with default role = 'user'
     if (!userDoc.exists()) {
       await setDoc(userDocRef, {
         name: user.displayName || "",
         email: user.email,
-        role: "user", // 👈 Assign role automatically
+        role: "user", // default role
         createdAt: new Date(),
       });
       console.log("New Google user created with role 'user':", user.uid);
-    } else {
-      console.log("Google user already exists:", user.uid);
     }
 
-    navigate("/", { replace: true });
+    // 🔹 Fetch role
+    const docSnap = await getDoc(userDocRef);
+    const role = docSnap.exists() ? docSnap.data().role : "user";
+
+    // 🔹 Navigate based on role
+    if (role === "admin") {
+      navigate("/admin", { replace: true });
+    } else {
+      navigate("/", { replace: true });
+    }
   } catch (error) {
     console.error("Google sign in error:", error);
     setError(getErrorMessage(error.code));
