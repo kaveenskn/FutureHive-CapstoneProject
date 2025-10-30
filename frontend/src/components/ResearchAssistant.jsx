@@ -25,18 +25,17 @@ const ResearchAssistant = () => {
   useEffect(() => {
     const fetchDefault = async () => {
       try {
-        const type = mapTypeForBackend(filters.type);
-        const res = await fetch(`http://127.0.0.1:5000/default?type=${type}`);
+        const res = await fetch("http://127.0.0.1:8000/topicspark");
         if (res.ok) {
           const data = await res.json();
-          setResults(data.results || []);
+          setResults(data.topics || []);
         }
       } catch (e) {
         console.error(e);
       }
     };
     fetchDefault();
-  }, [filters.type]);
+  }, []);
 
   const handleSearch = async () => {
     if (!query.trim()) return;

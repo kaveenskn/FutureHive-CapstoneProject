@@ -38,14 +38,12 @@ app.add_middleware(
 )
 
 
+# Adjusted the `/topicspark` endpoint to ensure it sends data correctly
 @app.get("/topicspark")
 async def get_trending_topics():
     """
     Generate trending research and mini project ideas with short descriptions.
     """
-        # Ask the model to return strict JSON (an array of objects) to make frontend
-        # rendering simple. Each object must include `title`, `description`, and
-        # `type` where `type` is one of: "research", "capstone", or "both".
     prompt = """
     You are an expert academic and innovation advisor.
     Generate 10 trending topics for university research papers and capstone (mini) projects.
@@ -61,9 +59,9 @@ async def get_trending_topics():
     ]
 
     Do not include any extra commentary or markdown — strictly the JSON array.
-        """
+    """
     if not client:
-            return {"error": "Gemini client not configured. Set GEMINI_API_KEY in environment."}
+        return {"error": "Gemini client not configured. Set GEMINI_API_KEY in environment."}
 
     max_retries = 3
     base_delay = 1.0
@@ -76,26 +74,15 @@ async def get_trending_topics():
             )
             answer = getattr(response, "text", "(No text in response)").strip()
 
-            # Try to parse JSON directly. If parsing fails, try to extract a JSON
-            # substring, otherwise fall back to a lightweight regex parser.
+            # Parse JSON directly
             try:
                 topics = json.loads(answer)
-                # Validate shape
                 if isinstance(topics, list):
-                    # Ensure each item has title/description/type and normalize
-                    normalized = []
-                    for t in topics:
-                        if not isinstance(t, dict):
-                            continue
-                        title = t.get("title") or t.get("Title") or ""
-                        desc = t.get("description") or t.get("Description") or ""
-                        typ = t.get("type") or t.get("Type")
-                        normalized.append({"title": title, "description": desc, "type": typ})
-                    return {"topics": normalized}
+                    return {"topics": topics}
             except Exception:
                 pass
 
-            # Try to extract JSON-like substring between the first '[' and last ']'
+            # Extract JSON substring
             try:
                 start = answer.index('[')
                 end = answer.rindex(']')
@@ -106,35 +93,12 @@ async def get_trending_topics():
             except Exception:
                 pass
 
-            # Fallback: parse numbered lines like '1. Title - description' and
-            # try to detect type heuristically from the description if missing.
-            items = []
-            for line in _re.split(r"\n+", answer):
-                m = _re.match(r"\s*\d+\.\s*(?:\*\*)?(?P<title>[^\-\n\*]+?)(?:\*\*)?\s*[\-–:\)]\s*(?P<desc>.+)", line)
-                if m:
-                    title = m.group('title').strip().strip('"')
-                    desc = m.group('desc').strip()
-                    # Heuristic: if description mentions 'capstone' or 'mini project'
-                    # classify as capstone, otherwise research.
-                    low = desc.lower()
-                    if 'capstone' in low or 'mini project' in low or 'project' in low and 'capstone' in low:
-                        typ = 'capstone'
-                    else:
-                        typ = 'research'
-                    items.append({"title": title, "description": desc, "type": typ})
-
-            if items:
-                return {"topics": items}
-
-            # As a last resort, return the raw string in a single-item array so the
-            # frontend can still display content.
+            # Fallback: return raw string
             return {"topics": [{"title": "Generated topics", "description": answer}]}
 
         except Exception as e:
             estr = str(e)
             if attempt == max_retries - 1:
-                # Return a small cached fallback so the frontend can render cards
-                print(f"topicspark: model failed after retries: {estr}")
                 fallback = [
                     {"title": "Edge AI for Environmental Sensing", "description": "Low-power edge models for real-time environmental monitoring and anomaly detection.", "type": "research"},
                     {"title": "Secure IoT Firmware Update Framework", "description": "A capstone-style project building a secure OTA update flow for resource-constrained IoT devices.", "type": "capstone"},
@@ -143,7 +107,6 @@ async def get_trending_topics():
                 return {"topics": fallback}
             if "overloaded" in estr.lower() or "503" in estr or "unavailable" in estr.lower():
                 delay = base_delay * (2 ** attempt) + random.uniform(0, 0.5)
-                print(f"Model overloaded/temporary error, retrying in {delay:.2f}s (attempt {attempt+1})")
                 await asyncio.sleep(delay)
                 continue
             return {"error": estr}

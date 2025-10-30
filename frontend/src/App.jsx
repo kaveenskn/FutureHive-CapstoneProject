@@ -20,6 +20,7 @@ import PastResearch from "./pages/PastResearch.jsx";
 function App() {
   return (
     <>
+   
       <Navbar />
       <Routes>
         <Route path="/" element={<Homepage />} />

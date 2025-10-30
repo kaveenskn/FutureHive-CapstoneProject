@@ -36,22 +36,19 @@ export default function Projects() {
         return () => unsubscribe();
     }, []);
 
-    const fetchProjects = async () => {
-        if (!auth.currentUser) return;
-
-        const q = collection(db, "users", auth.currentUser.uid, "projects");
-        const snapshot = await getDocs(q);
-
-        const fetchedProjects = snapshot.docs.map((doc) => {
-            const data = doc.data();
-            return {
-                id: doc.id, // Ensure Firestore document ID is included
-                ...data,
-            };
-        });
-
-        console.log("Fetched projects:", fetchedProjects);
-        setProjects(fetchedProjects);
+    const fetchProjects = async (UserId) => {
+        try {
+            const q = collection(db, "users", UserId, "projects");
+            const snapshot = await getDocs(q);
+            const fetchedProjects = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+            }));
+            setProjects(fetchedProjects);
+        } catch (e) {
+            console.error("Error fetching projects", e);
+            toast.error("Failed to load projects");
+        }
     };
 
     const handleChange = (e) => {
@@ -82,11 +79,7 @@ export default function Projects() {
 
         try {
             const docRef = await addDoc(collection(db, "users", auth.currentUser.uid, "projects"), newProject);
-            const savedProject = {
-                id: docRef.id, // Ensure the saved project includes the Firestore document ID
-                ...newProject,
-            };
-            setProjects([savedProject, ...projects]);
+            setProjects([{ id: docRef.id, ...newProject }, ...projects]);
             toast.success("Project added successfully");
             setIsOpen(false);
             setForm({
@@ -227,9 +220,9 @@ export default function Projects() {
 
                                             </div>
                                             <div className="flex flex-col items-end gap-2">
-                                                <button onClick={() => navigate(`/projects/${doc.id}`)} className="px-3 py-1 border rounded-md text-sm">Open</button>
+                                                <button onClick={() => navigate(`/projects/${p.id}`)} className="px-3 py-1 border rounded-md text-sm">Open</button>
                                                 <button
-                                                    onClick={() => handleDelete(user?.uid, p.id)}
+                                                    onClick={() => deleteProject(user?.uid, p.id)}
                                                     className="px-3 py-1 text-sm text-red-600"
                                                 >
                                                     Delete
