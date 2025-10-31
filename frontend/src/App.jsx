@@ -16,6 +16,7 @@ import ProjectDetails from "./pages/ProjectDetails.jsx";
 import TopicSpark from "./pages/TopicSpark.jsx";
 import PastResearch from "./pages/PastResearch.jsx";
 import ResearchCompanion from "./components/ResearchCompanion.jsx";
+import ResearchDashboard from "./components/ResearchDashboard.jsx";
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
         <Route path="/topicspark" element={<TopicSpark />} />
         <Route path="/assistant" element={<ResearchAssistant />} />
         <Route path="/researchcompanion" element={<ResearchCompanion />} />
+        <Route path="/researchdashboard" element={<ResearchDashboard />} />
       </Routes>
       <ToastContainer closeOnClick />
     </>
