@@ -2,6 +2,8 @@ import React, { useState } from "react";
 
 const App = () => {
   const [currentPage, setCurrentPage] = useState("home");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
 
   const renderPage = () => {
     switch (currentPage) {
@@ -14,12 +16,30 @@ const App = () => {
     }
   };
 
-  return <div className="bg-gray-50 min-h-screen">{renderPage()}</div>;
+  return (
+    <div className="bg-gray-50 min-h-screen">
+      {renderPage()}
+      {showDeleteModal && (
+        <DeleteConfirmationModal
+          user={userToDelete}
+          onConfirm={() => {
+            console.log("Deleting user:", userToDelete);
+            setShowDeleteModal(false);
+            setUserToDelete(null);
+          }}
+          onCancel={() => {
+            setShowDeleteModal(false);
+            setUserToDelete(null);
+          }}
+        />
+      )}
+    </div>
+  );
 };
 
 const AIResearchAssistant = ({ onAccessAdmin }) => {
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center min-h-screen p-4">
+    <div className="bg-gradient-to-b from-blue-100 to-blue-50 flex items-center justify-center min-h-screen p-4">
       <div className="rounded-2xl w-full max-w-md overflow-hidden bg-white shadow-xl">
         <div className="p-8">
           <div className="flex items-center justify-center mb-6">
@@ -52,7 +72,7 @@ const AIResearchAssistant = ({ onAccessAdmin }) => {
           <div className="mt-8">
             <button
               onClick={onAccessAdmin}
-              className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-medium rounded-lg transition duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+              className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
             >
               Access Admin Panel
             </button>
@@ -69,7 +89,7 @@ const AIResearchAssistant = ({ onAccessAdmin }) => {
   );
 };
 const AdminPanel = ({ onBack }) => {
-  const users = [
+  const [users, setUsers] = useState([
     {
       id: 1,
       name: "Alice Johnson",
@@ -91,10 +111,42 @@ const AdminPanel = ({ onBack }) => {
       role: "Moderator",
       status: "Active",
     },
-  ];
+  ]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const usersPerPage = 5;
+
+  const filteredUsers = users.filter(
+    (user) =>
+      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+
+  const handleView = (user) => {
+    console.log("Viewing user:", user);
+    alert(`Viewing details for ${user.name}`);
+  };
+
+  const handleEdit = (user) => {
+    console.log("Editing user:", user);
+    alert(`Edit functionality for ${user.name} - Coming soon!`);
+  };
+
+  const handleDelete = (user) => {
+    if (window.confirm(`Are you sure you want to delete ${user.name}?`)) {
+      setUsers(users.filter((u) => u.id !== user.id));
+      console.log("Deleted user:", user);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="bg-gradient-to-b from-blue-100 to-blue-50 min-h-screen">
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl sm:px-6 lg:px-8 flex items-center justify-between px-4 py-4 mx-auto">
           <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
@@ -244,12 +296,46 @@ const AdminPanel = ({ onBack }) => {
 
           <div className="flex-1 overflow-hidden bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Manage Users
-              </h2>
-              <p className="mt-1 text-gray-600">
-                View and manage all platform users
-              </p>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Manage Users
+                  </h2>
+                  <p className="mt-1 text-gray-600">
+                    View and manage all platform users
+                  </p>
+                </div>
+                <div className="text-sm text-gray-500">
+                  Total: {filteredUsers.length} user
+                  {filteredUsers.length !== 1 ? "s" : ""}
+                </div>
+              </div>
+
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search by name or email..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg"
+                />
+                <svg
+                  className="absolute left-3 top-2.5 w-5 h-5 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
             </div>
 
             <div className="overflow-x-auto">
@@ -274,106 +360,256 @@ const AdminPanel = ({ onBack }) => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {users.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">
-                          {user.name}
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <div className="text-sm text-gray-500">
-                          {user.email}
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            user.role === "Admin"
-                              ? "bg-purple-100 text-purple-800"
-                              : user.role === "Moderator"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-green-100 text-green-800"
-                          }`}
-                        >
-                          {user.role}
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <span className="inline-flex px-2 text-xs font-semibold leading-5 text-green-800 bg-green-100 rounded-full">
-                          {user.status}
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <button
-                            className="hover:text-blue-900 text-blue-600 transition-colors"
-                            title="View"
-                          >
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                              />
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                              />
-                            </svg>
-                          </button>
-                          <button
-                            className="hover:text-green-900 text-green-600 transition-colors"
-                            title="Edit"
-                          >
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                              />
-                            </svg>
-                          </button>
-                          <button
-                            className="hover:text-red-900 text-red-600 transition-colors"
-                            title="Delete"
-                          >
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
-                          </button>
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan="5" className="px-6 py-12 text-center">
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin w-8 h-8 border-b-2 border-blue-600 rounded-full"></div>
+                          <span className="ml-3 text-gray-600">
+                            Loading users...
+                          </span>
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  ) : currentUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="px-6 py-12 text-center">
+                        <svg
+                          className="w-12 h-12 mx-auto text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                          />
+                        </svg>
+                        <h3 className="mt-2 text-sm font-medium text-gray-900">
+                          No users found
+                        </h3>
+                        <p className="mt-1 text-sm text-gray-500">
+                          {searchQuery
+                            ? "Try adjusting your search"
+                            : "Get started by adding a new user"}
+                        </p>
+                      </td>
+                    </tr>
+                  ) : (
+                    currentUsers.map((user) => (
+                      <tr key={user.id} className="hover:bg-gray-50">
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {user.name}
+                          </div>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <div className="text-sm text-gray-500">
+                            {user.email}
+                          </div>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <span
+                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              user.role === "Admin"
+                                ? "bg-purple-100 text-purple-800"
+                                : user.role === "Moderator"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-green-100 text-green-800"
+                            }`}
+                          >
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <span className="inline-flex px-2 text-xs font-semibold leading-5 text-green-800 bg-green-100 rounded-full">
+                            {user.status}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleView(user)}
+                              className="hover:text-blue-900 text-blue-600 transition-colors"
+                              title="View"
+                              aria-label={`View ${user.name}`}
+                            >
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                />
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleEdit(user)}
+                              className="hover:text-green-900 text-green-600 transition-colors"
+                              title="Edit"
+                              aria-label={`Edit ${user.name}`}
+                            >
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDelete(user)}
+                              className="hover:text-red-900 text-red-600 transition-colors"
+                              title="Delete"
+                              aria-label={`Delete ${user.name}`}
+                            >
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
+
+            {!isLoading && filteredUsers.length > 0 && (
+              <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
+                <div className="text-sm text-gray-700">
+                  Showing{" "}
+                  <span className="font-medium">{indexOfFirstUser + 1}</span> to{" "}
+                  <span className="font-medium">
+                    {Math.min(indexOfLastUser, filteredUsers.length)}
+                  </span>{" "}
+                  of <span className="font-medium">{filteredUsers.length}</span>{" "}
+                  results
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    disabled={currentPage === 1}
+                    className={`px-3 py-1 rounded-lg border transition-colors ${
+                      currentPage === 1
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-white text-blue-600 border-blue-600 hover:bg-blue-50"
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  <div className="flex space-x-1">
+                    {[...Array(totalPages)].map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentPage(index + 1)}
+                        className={`px-3 py-1 rounded-lg transition-colors ${
+                          currentPage === index + 1
+                            ? "bg-blue-600 text-white"
+                            : "bg-white text-gray-700 hover:bg-gray-100 border"
+                        }`}
+                      >
+                        {index + 1}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    }
+                    disabled={currentPage === totalPages}
+                    className={`px-3 py-1 rounded-lg border transition-colors ${
+                      currentPage === totalPages
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-white text-blue-600 border-blue-600 hover:bg-blue-50"
+                    }`}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const DeleteConfirmationModal = ({ user, onConfirm, onCancel }) => {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="w-full max-w-md mx-4 overflow-hidden bg-white rounded-lg shadow-xl">
+        <div className="p-6">
+          <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full">
+            <svg
+              className="w-6 h-6 text-red-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+          </div>
+          <h3 className="mt-4 text-lg font-semibold text-center text-gray-900">
+            Delete User
+          </h3>
+          <p className="mt-2 text-sm text-center text-gray-600">
+            Are you sure you want to delete{" "}
+            <span className="font-semibold">{user?.name}</span>? This action
+            cannot be undone.
+          </p>
+        </div>
+        <div className="bg-gray-50 flex px-6 py-4 space-x-3">
+          <button
+            onClick={onCancel}
+            className="hover:bg-gray-50 flex-1 px-4 py-2 text-gray-700 transition-colors bg-white border border-gray-300 rounded-lg"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="hover:bg-red-700 flex-1 px-4 py-2 text-white transition-colors bg-red-600 rounded-lg"
+          >
+            Delete
+          </button>
         </div>
       </div>
     </div>
