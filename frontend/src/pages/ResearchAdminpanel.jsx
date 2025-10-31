@@ -1,6 +1,23 @@
-import React from "react";
+import React, { useState } from "react";
 
-const AIResearchAssistant = () => {
+const App = () => {
+  const [currentPage, setCurrentPage] = useState("home");
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case "admin":
+        return <AdminPanel onBack={() => setCurrentPage("home")} />;
+      default:
+        return (
+          <AIResearchAssistant onAccessAdmin={() => setCurrentPage("admin")} />
+        );
+    }
+  };
+
+  return <div className="bg-gray-50 min-h-screen">{renderPage()}</div>;
+};
+
+const AIResearchAssistant = ({ onAccessAdmin }) => {
   return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center min-h-screen p-4">
       <div className="rounded-2xl w-full max-w-md overflow-hidden bg-white shadow-xl">
@@ -33,7 +50,10 @@ const AIResearchAssistant = () => {
           </p>
 
           <div className="mt-8">
-            <button className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-medium rounded-lg transition duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+            <button
+              onClick={onAccessAdmin}
+              className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-medium rounded-lg transition duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+            >
               Access Admin Panel
             </button>
           </div>
@@ -48,5 +68,24 @@ const AIResearchAssistant = () => {
     </div>
   );
 };
+const AdminPanel = ({ onBack }) => {
+  return (
+    <div className="min-h-screen bg-gray-100">
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl sm:px-6 lg:px-8 flex items-center justify-between px-4 py-4 mx-auto">
+          <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
+          <button
+            onClick={onBack}
+            className="hover:bg-blue-700 px-4 py-2 text-white transition duration-200 bg-blue-600 rounded-lg"
+          >
+            Back to Home
+          </button>
+        </div>
+      </header>
 
-export default AIResearchAssistant;
+      <div className="max-w-7xl sm:px-6 lg:px-8 px-4 py-8 mx-auto"></div>
+    </div>
+  );
+};
+
+export default App;
