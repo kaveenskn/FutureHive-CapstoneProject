@@ -16,11 +16,9 @@ import ProjectDetails from "./pages/ProjectDetails.jsx";
 import TopicSpark from "./pages/TopicSpark.jsx";
 import PastResearch from "./pages/PastResearch.jsx";
 
-
 function App() {
   return (
     <>
-   
       <Navbar />
       <Routes>
         <Route path="/" element={<Homepage />} />
@@ -34,9 +32,9 @@ function App() {
         <Route path="/researchhub" element={<ResearchHub />} />
 
         <Route path="/topicspark" element={<TopicSpark />} />
-
+        <Route path="/assistant" element={<ResearchAssistant />} />
       </Routes>
-      <ToastContainer  closeOnClick />
+      <ToastContainer closeOnClick />
     </>
   );
 }
