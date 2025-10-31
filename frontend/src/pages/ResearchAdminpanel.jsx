@@ -166,6 +166,60 @@ const AdminPanel = ({ onBack }) => {
             </div>
           </div>
         </div>
+
+        <div className="md:flex-row flex flex-col gap-8">
+          <div className="md:w-64 h-fit w-full p-6 bg-white rounded-lg shadow">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+              Management
+            </h2>
+            <ul className="space-y-2">
+              <li>
+                <a
+                  href="#"
+                  className="bg-blue-50 flex items-center px-4 py-2 text-blue-600 rounded-lg"
+                >
+                  <svg
+                    className="w-5 h-5 mr-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+                    />
+                  </svg>
+                  User Management
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#"
+                  className="hover:bg-gray-50 flex items-center px-4 py-2 text-gray-700 rounded-lg"
+                >
+                  <svg
+                    className="w-5 h-5 mr-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  Research Management
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <div className="flex-1"></div>
+        </div>
       </div>
     </div>
   );
