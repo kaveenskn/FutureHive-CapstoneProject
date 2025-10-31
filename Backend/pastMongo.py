@@ -1,9 +1,9 @@
 import pandas as pd
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from textblob import TextBlob
-from langchain.schema import Document
+from langchain_core.documents import Document
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient
@@ -74,32 +74,32 @@ retriever2 = capstone_vectorstore.as_retriever(search_kwargs={"k": 10})
 # -----------------------------
 # Helper Functions
 # -----------------------------
-def get_default_projects(collection_type="research", limit=10):
-    default_projects = []
-    if collection_type == "capstone":
-        collection_to_use = CapstoneDocs
-    else:
-        collection_to_use = ResearchDocs
+def get_default_projects(collection_type="research",limit=10):
+       default_projects=[]
+    
+       if collection_type=="capstone":
+        collection_to_use=CapstoneDocs
+       else:
+        collection_to_use=ResearchDocs
 
-    for doc in collection_to_use[:limit]:
-        default_projects.append({
+        for doc in collection_to_use[:limit]:
+            default_projects.append({
             "title": doc.get("title", ""),
-            "authors": doc.get("author", ""),
             "description": doc.get("abstract", ""),
-            "year": doc.get("year", ""),
-            "type": collection_type,
-            "university": doc.get("university", "Unknown University")
+            "authors": doc.get("author", ""),
+            "year": doc.get("year", "")
         })
-    return default_projects
+
+        return default_projects
 
 
 def search_projects(user_query, collection_type="research"):
     print(f"Query used: {user_query} (collection={collection_type})")
 
     if collection_type == "capstone":
-        results = retriever2.get_relevant_documents(user_query)
+        results = retriever2.invoke(user_query)
     else:
-        results = retriever1.get_relevant_documents(user_query)
+        results = retriever1.invoke(user_query)
 
     if not results:
         print("No matching projects found.")
@@ -120,11 +120,11 @@ def search_projects(user_query, collection_type="research"):
 # -----------------------------
 # Flask Routes
 # -----------------------------
-@app.route("/default", methods=["GET"])
+@app.route('/default',methods=['GET'])
 def default_pastpapers():
     try:
-        t = request.args.get("type", "research")
-        results = get_default_projects(collection_type=t, limit=10)
+        t=request.args.get('type','research')
+        results=get_default_projects(collection_type=t,limit=10)
         return jsonify({"results": results}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

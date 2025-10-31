@@ -25,10 +25,10 @@ const ResearchAssistant = () => {
   useEffect(() => {
     const fetchDefault = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:8000/topicspark");
+        const res = await fetch("http://127.0.0.1:5000/default");
         if (res.ok) {
           const data = await res.json();
-          setResults(data.topics || []);
+          setResults(data.results || []);
         }
       } catch (e) {
         console.error(e);

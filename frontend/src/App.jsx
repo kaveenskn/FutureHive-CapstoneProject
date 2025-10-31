@@ -36,7 +36,7 @@ function App() {
         <Route path="/topicspark" element={<TopicSpark />} />
 
       </Routes>
-      <ToastContainer />
+      <ToastContainer  closeOnClick />
     </>
   );
 }

@@ -153,7 +153,7 @@ const Navbar = () => {
         )}
       </nav>
       {/* Toast Container */}
-      <ToastContainer />
+      <ToastContainer  autoClose={1000}  />
 
     </>
   );

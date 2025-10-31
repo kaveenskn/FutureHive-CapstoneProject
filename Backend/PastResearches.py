@@ -4,12 +4,12 @@
 # pip install pandas langchain langchain-community chromadb sentence-transformers textblob flask flask-cors
 
 import pandas as pd
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
+from langchain_core.documents import Document  # fixed import
 from textblob import TextBlob
-from langchain.schema import Document
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 
 # ----------------------------
@@ -103,9 +103,11 @@ def search_projects(user_query, collection_type='research'):
 
     # Choose the retriever depending on requested collection
     if collection_type == 'capstone':
-        results = retriever1.get_relevant_documents(user_query)
+        results = retriever1.invoke(user_query)
+
     else:
-        results = retriever.get_relevant_documents(user_query)
+        results = retriever.invoke(user_query)
+
 
     if not results:
         print("No matching projects found.")
@@ -226,3 +228,5 @@ def search_options():
 
 if __name__ == "__main__":
     app.run(port=5000, debug=True)
+
+
