@@ -227,7 +227,7 @@ export default function Projects() {
 
                                             </div>
                                             <div className="flex flex-col items-end gap-2">
-                                                <button onClick={() => navigate(`/projects/${doc.id}`)} className="px-3 py-1 border rounded-md text-sm">Open</button>
+                                                <button onClick={() => navigate(`/projects/${p.id}`)} className="px-3 py-1 border rounded-md text-sm">Open</button>
                                                 <button
                                                     onClick={() => handleDelete(user?.uid, p.id)}
                                                     className="px-3 py-1 text-sm text-red-600"
