@@ -6,7 +6,7 @@ import { db, auth } from '../components/Firebase';
 import { toast } from 'react-toastify';
 
 export default function ProjectDetails() {
-  const { id } = useParams(); // ✅ projectId from URL
+  const { id } = useParams(); // project ID from URL
   const navigate = useNavigate();
 
   const [user, setUser] = useState(null);
@@ -15,41 +15,57 @@ export default function ProjectDetails() {
   const [milestoneTitle, setMilestoneTitle] = useState('');
   const [perMilestoneTaskInput, setPerMilestoneTaskInput] = useState({});
 
-  // ✅ Load the logged-in user and project
+  // ✅ Fetch project and determine role
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
         navigate('/signin');
         return;
       }
+
       setUser(currentUser);
-      await fetchProject(currentUser.uid, id);
+      const projectData = await fetchProject(currentUser.uid, id);
+      if (!projectData) return;
+
+      // ✅ Determine role automatically
+      let detectedRole = 'viewer';
+      if (projectData.supervisorEmail === currentUser.email) detectedRole = 'supervisor';
+      else if (projectData.mentorEmail === currentUser.email) detectedRole = 'mentor';
+      else if (projectData.leaderEmail === currentUser.email) detectedRole = 'leader';
+      else if ((projectData.team || []).includes(currentUser.email)) detectedRole = 'member';
+
+      setRole(detectedRole);
     });
+
     return () => unsubscribe();
   }, [id, navigate]);
 
-  // ✅ Fetch the project document
+  // ✅ Fetch project
   async function fetchProject(uid, projectId) {
     try {
-      const projectRef = doc(db, 'users', uid, 'projects', projectId);
+      const projectRef = doc(db,'projects', projectId);
       const projectSnap = await getDoc(projectRef);
       if (projectSnap.exists()) {
-        setProject({ id: projectSnap.id, ...projectSnap.data() });
+        const data = { id: projectSnap.id, ...projectSnap.data() };
+        setProject(data);
+        return data; // return data for role detection
       } else {
         toast.error('Project not found');
         navigate('/projects');
+        return null;
       }
     } catch (err) {
       console.error(err);
       toast.error('Failed to load project');
+      return null;
     }
   }
 
-  // ✅ Update project document
+  // ✅ Update project
   async function updateProject(newData) {
     if (!user || !project) return;
     try {
-      const projectRef = doc(db, 'users', user.uid, 'projects', project.id);
+      const projectRef = doc(db,'projects', project.id);
       await updateDoc(projectRef, newData);
       setProject((prev) => ({ ...prev, ...newData }));
     } catch (err) {
@@ -58,7 +74,7 @@ export default function ProjectDetails() {
     }
   }
 
-  // ✅ Add new milestone
+  // ✅ Add milestone
   function addMilestone() {
     if (!milestoneTitle.trim() || !project) return;
     const newMilestone = {
@@ -72,7 +88,7 @@ export default function ProjectDetails() {
     setMilestoneTitle('');
   }
 
-  // ✅ Add task to a specific milestone
+  // ✅ Add task
   function addTaskFor(milestoneId) {
     const title = (perMilestoneTaskInput[milestoneId] || '').trim();
     if (!title || !project) return;
@@ -94,21 +110,37 @@ export default function ProjectDetails() {
       if (m.id !== milestoneId) return m;
       return {
         ...m,
-        tasks: m.tasks.map((t) =>
-          t.id === taskId ? { ...t, status } : t
-        ),
+        tasks: m.tasks.map((t) => (t.id === taskId ? { ...t, status } : t)),
       };
     });
     updateProject({ milestones: updatedMilestones });
   }
 
-  // ✅ Calculate milestone completion percentage
+  // ✅ Delete milestone
+  function deleteMilestone(milestoneId) {
+    if (!project) return;
+    const updatedMilestones = (project.milestones || []).filter((m) => m.id !== milestoneId);
+    updateProject({ milestones: updatedMilestones });
+  }
+
+  // ✅ Completion %
   function percentComplete(m) {
     const total = (m.tasks || []).length;
     if (total === 0) return 0;
     const done = m.tasks.filter((t) => t.status === 'done').length;
     return Math.round((done / total) * 100);
   }
+
+  // ✅ Handle Enter key
+  function handleKeyPress(event, callback) {
+    if (event.key === 'Enter') {
+      callback();
+    }
+  }
+
+  // ✅ Permission control
+  const canEdit =
+    role === 'supervisor' || role === 'mentor' || role === 'leader';
 
   if (!project) {
     return (
@@ -129,21 +161,11 @@ export default function ProjectDetails() {
               {project.type} • {project.year}
             </div>
             <div className="text-sm mt-2 text-slate-700">
-              Supervisor: {project.supervisor?.name || '-'}
+              Supervisor: {project.supervisorEmail || '-'}
             </div>
           </div>
-          <div>
-            <label className="text-sm text-slate-600 mr-2">Role</label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="border px-2 py-1 rounded"
-            >
-              <option value="viewer">Viewer</option>
-              <option value="supervisor">Supervisor</option>
-              <option value="mentor">Mentor</option>
-              <option value="leader">Leader</option>
-            </select>
+          <div className="text-sm text-slate-700 bg-slate-100 px-3 py-1 rounded-md shadow-sm">
+            Role: <span className="font-semibold capitalize">{role}</span>
           </div>
         </div>
 
@@ -157,8 +179,18 @@ export default function ProjectDetails() {
                 <div key={m.id} className="p-3 border rounded">
                   <div className="flex items-center justify-between">
                     <div className="font-medium">{m.title}</div>
-                    <div className="text-xs text-slate-500">
-                      {percentComplete(m)}%
+                    <div className="flex items-center gap-2">
+                      <div className="text-xs text-slate-500">
+                        {percentComplete(m)}%
+                      </div>
+                      {canEdit && (
+                        <button
+                          onClick={() => deleteMilestone(m.id)}
+                          className="bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-md shadow-md hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1"
+                        >
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="mt-2 w-full bg-slate-100 h-2 rounded-full overflow-hidden">
@@ -171,11 +203,12 @@ export default function ProjectDetails() {
               ))}
             </div>
 
-            {(role === 'supervisor' || role === 'mentor' || role === 'leader') && (
+            {canEdit && (
               <div className="mt-4">
                 <input
                   value={milestoneTitle}
                   onChange={(e) => setMilestoneTitle(e.target.value)}
+                  onKeyDown={(e) => handleKeyPress(e, addMilestone)}
                   placeholder="New milestone"
                   className="w-full px-3 py-2 border rounded-md"
                 />
@@ -208,8 +241,10 @@ export default function ProjectDetails() {
                       Created: {new Date(m.createdAt).toLocaleString()}
                     </div>
                   </div>
-                  <div className="text-sm text-slate-500">
-                    {percentComplete(m)}%
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm text-slate-500">
+                      {percentComplete(m)}%
+                    </div>
                   </div>
                 </div>
 
@@ -235,18 +270,20 @@ export default function ProjectDetails() {
                         <div className="text-xs text-slate-500">{t.status}</div>
                       </div>
 
-                      {(role === 'supervisor' ||
-                        role === 'mentor' ||
-                        role === 'leader') && (
+                      {canEdit && (
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => updateTaskStatus(m.id, t.id, 'inprogress')}
+                            onClick={() =>
+                              updateTaskStatus(m.id, t.id, 'inprogress')
+                            }
                             className="px-3 py-1 border rounded text-sm"
                           >
                             In Progress
                           </button>
                           <button
-                            onClick={() => updateTaskStatus(m.id, t.id, 'done')}
+                            onClick={() =>
+                              updateTaskStatus(m.id, t.id, 'done')
+                            }
                             className="px-3 py-1 border rounded text-sm"
                           >
                             Done
@@ -258,7 +295,7 @@ export default function ProjectDetails() {
                 </div>
 
                 {/* Add new task */}
-                {(role === 'supervisor' || role === 'mentor' || role === 'leader') && (
+                {canEdit && (
                   <div className="mt-4 flex gap-2">
                     <input
                       value={perMilestoneTaskInput[m.id] || ''}
@@ -267,6 +304,9 @@ export default function ProjectDetails() {
                           ...prev,
                           [m.id]: e.target.value,
                         }))
+                      }
+                      onKeyDown={(e) =>
+                        handleKeyPress(e, () => addTaskFor(m.id))
                       }
                       placeholder="New task"
                       className="flex-1 px-3 py-2 border rounded-md"
