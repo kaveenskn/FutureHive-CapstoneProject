@@ -44,7 +44,7 @@ app.add_middleware(
 )
 
 
-@app.post("/ask")
+@app.post("/ask_research")
 async def ask_ai(request: Request):
     data = await request.json()
     topic = data.get("topic", "")
@@ -116,6 +116,46 @@ Answer:
 
             # For other errors, don't retry
             return {"error": estr}
+
+
+@app.post("/explore_project")
+async def explore_project(request: Request):
+    data = await request.json()
+    title = data.get("title", "")
+    description = data.get("description", "")
+    type_ = data.get("type", "")
+    tags = data.get("tags", [])
+
+    if not title:
+        return {"error": "No project title provided"}
+
+    prompt = f"""
+You are an academic assistant that provides detailed insights about projects.
+
+Given the project details below, analyze the project and provide insights, recommendations, and potential improvements.
+
+Title: {title}
+Type: {type_}
+Tags: {', '.join(tags)}
+Description: {description}
+
+Answer:
+"""
+
+    if not client:
+        return {"error": "Gemini client not configured. Set GEMINI_API_KEY in environment."}
+
+    try:
+        contents = [types.Content(role="user", parts=[types.Part.from_text(text=prompt)])]
+        response = client.models.generate_content(
+            model="gemini-2.5-pro",
+            contents=contents,
+        )
+        answer = getattr(response, "text", "(No text in response)")
+        return {"answer": answer.strip()}
+
+    except Exception as e:
+        return {"error": str(e)}
 
 
 
