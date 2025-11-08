@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const TopicSparkBody = () => {
   const [selectedType, setSelectedType] = useState("all");
@@ -7,6 +8,7 @@ const TopicSparkBody = () => {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const navigate = useNavigate();
 
   const types = [
     { id: "all", label: "All Types" },
@@ -83,6 +85,10 @@ const TopicSparkBody = () => {
       : projects.filter(
           (p) => p.type.toLowerCase() === selectedType.toLowerCase()
         );
+
+  const navigateToChatbot = (project) => {
+    navigate("/chat", { state: { paper: project } });
+  };
 
   return (
     <main className="flex-1 p-6">
@@ -221,8 +227,11 @@ const TopicSparkBody = () => {
                   {project.description}
                 </p>
 
-                <button className="bg-blue-600 hover:bg-blue-700 hover:scale-105 w-full px-4 py-3 font-semibold text-white transition-all duration-300 transform rounded-lg shadow-md mb-0">
-                  Explore Projects
+                <button
+                  onClick={() => navigateToChatbot(project)}
+                  className="bg-blue-600 hover:bg-blue-700 hover:scale-105 w-full px-4 py-3 font-semibold text-white transition-all duration-300 transform rounded-lg shadow-md mb-0"
+                >
+                  Explore Project
                 </button>
               </div>
             ))}
