@@ -22,11 +22,11 @@ const Chatbot = () => {
   try {
     let url = "";
     let payload = {};
-    alert(source)
+    
 
     if (source === "research") {
       // First type of request
-      url = "http://127.0.0.1:8000/ask_research";
+      url = "http://127.0.0.1:8001/ask_research";
       payload = {
         topic: paper.title,
         abstract: paper.description,
@@ -36,12 +36,11 @@ const Chatbot = () => {
       };
     } else if (source === "topicspark") {
       // Second type of request
-      url = "http://127.0.0.1:8000/ask_topicspark";
+      url = "http://127.0.0.1:8001/ask_topicspark";
       payload = {
         topic: paper.title,
         abstract: paper.description,
-        type: paper.type,
-        tags: paper.tags,
+        type:paper.type,
         question,
       };
     }

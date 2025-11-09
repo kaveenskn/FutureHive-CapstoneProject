@@ -20,7 +20,7 @@ const Homepage = () => {
       setTimeout(() => navigate("/signin"), 900);
       return;
     }
-    navigate("/search");
+    navigate("/researchhub");
   };
 
   const handleExplore = () => {
@@ -53,7 +53,7 @@ const Homepage = () => {
   }, []);
 
   return (
-    <div className="h-screen bg-gradient-to-b from-blue-100 to-blue-50 flex flex-col">
+    <div className=" h-screen bg-gradient-to-b from-blue-100 to-blue-50 flex flex-col">
      
      
 
