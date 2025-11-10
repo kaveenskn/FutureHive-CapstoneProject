@@ -226,6 +226,12 @@ def search_options():
     resp.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
     return resp
 
+# ----------------------------
+# Step 8: Register Admin Routes
+# ----------------------------
+from routes.admin_route import admin_bp
+app.register_blueprint(admin_bp, url_prefix='/api/admin')
+
 if __name__ == "__main__":
     app.run(port=5000, debug=True)
 
