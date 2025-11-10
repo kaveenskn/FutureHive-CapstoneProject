@@ -1,10 +1,10 @@
 # Research Admin Panel Backend - Quick Start Guide
 
-## 📋 What You've Got
+##  What You've Got
 
 I've created a complete backend system for your ResearchAdminPanel with the following features:
 
-### ✅ New Files Created:
+###  New Files Created:
 
 1. **`routes/admin_route.py`** - All API endpoints for admin panel
 2. **`controller/admin_controller.py`** - Business logic for user & research management
@@ -12,13 +12,13 @@ I've created a complete backend system for your ResearchAdminPanel with the foll
 4. **`test_admin_api.py`** - Testing script
 5. **`create_sample_excel.py`** - Excel template generator
 
-### ✅ Modified Files:
+### Modified Files:
 
 1. **`PastResearches.py`** - Added admin routes registration
 
 ---
 
-## 🚀 Quick Start (3 Steps)
+##  Quick Start (3 Steps)
 
 ### Step 1: Install Dependencies
 
@@ -43,7 +43,7 @@ python test_admin_api.py
 
 ---
 
-## 📊 Available API Endpoints
+## Available API Endpoints
 
 ### Base URL: `http://localhost:5000/api/admin`
 
@@ -70,7 +70,7 @@ python test_admin_api.py
 
 ---
 
-## 🔧 How to Integrate with Frontend
+##  How to Integrate with Frontend
 
 ### Update Your ResearchAdminPanel.jsx
 
@@ -173,7 +173,7 @@ const fetchDashboardStats = async () => {
 
 ---
 
-## 📁 Database Structure
+##  Database Structure
 
 ### MongoDB Collections
 
@@ -210,7 +210,7 @@ Your backend uses MongoDB with these collections:
 
 ---
 
-## 🧪 Testing Your Backend
+##  Testing Your Backend
 
 ### Option 1: Use the Test Script
 
@@ -243,7 +243,7 @@ Invoke-RestMethod -Uri "http://localhost:5000/api/admin/users?page=1&per_page=5"
 
 ---
 
-## 📝 Excel Bulk Upload
+##  Excel Bulk Upload
 
 ### Step 1: Create Template
 
@@ -283,7 +283,7 @@ fetch("http://localhost:5000/api/admin/research/bulk-upload", {
 
 ---
 
-## 🔍 API Response Format
+##  API Response Format
 
 ### Success Response
 
@@ -306,7 +306,7 @@ fetch("http://localhost:5000/api/admin/research/bulk-upload", {
 
 ---
 
-## 🛠️ Troubleshooting
+##  Troubleshooting
 
 ### Problem: Server won't start
 
@@ -346,45 +346,45 @@ pip install <module-name>
 
 ---
 
-## 📚 Complete Documentation
+##  Complete Documentation
 
 For detailed API documentation, examples, and advanced features, see:
 **`ADMIN_PANEL_SETUP.md`**
 
 ---
 
-## 🎯 Next Steps
+##  Next Steps
 
-1. ✅ **Start the backend** - `python main.py`
-2. ✅ **Test endpoints** - `python test_admin_api.py`
-3. ✅ **Update frontend** - Replace mock data with API calls
-4. 🔐 **Add authentication** - Implement JWT (see full docs)
-5. 🚀 **Deploy** - Deploy to production server
+1.  **Start the backend** - `python main.py`
+2.  **Test endpoints** - `python test_admin_api.py`
+3.  **Update frontend** - Replace mock data with API calls
+4.  **Add authentication** - Implement JWT (see full docs)
+5.  **Deploy** - Deploy to production server
 
 ---
 
-## 💡 Key Features
+##  Key Features
 
-✨ **User Management**
+ **User Management**
 
 - Create, read, update, delete users
 - Search users by name/email
 - Pagination support
 
-✨ **Research Management**
+ **Research Management**
 
 - Manage research entries
 - Bulk upload from Excel
 - Full CRUD operations
 
-✨ **Dashboard Statistics**
+ **Dashboard Statistics**
 
 - Total users count
 - Total research entries
 - Unsupervised accounts
 - Recent additions
 
-✨ **Production Ready**
+ **Production Ready**
 
 - Error handling
 - Input validation
@@ -393,7 +393,7 @@ For detailed API documentation, examples, and advanced features, see:
 
 ---
 
-## 📞 Need Help?
+## Need Help?
 
 1. Check `ADMIN_PANEL_SETUP.md` for detailed docs
 2. Run `python test_admin_api.py` to verify setup
@@ -402,4 +402,4 @@ For detailed API documentation, examples, and advanced features, see:
 
 ---
 
-**Happy Coding! 🚀**
+**Happy Coding! **
