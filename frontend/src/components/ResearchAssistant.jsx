@@ -222,7 +222,7 @@ const ResearchAssistant = () => {
                       <div className="mt-4 flex justify-end">
                         <button
                           onClick={() =>
-                            navigate("/chat", { state: { paper: result } })
+                            navigate("/chat", { state: { paper: result, source: "research" } })
                           }
                           className="px-5 py-2 rounded-lg bg-gradient-to-r from-sky-500 to-sky-400 text-white font-medium shadow hover:scale-[1.01] transition"
                         >

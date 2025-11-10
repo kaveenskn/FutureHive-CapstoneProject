@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -5,41 +6,62 @@ const Chatbot = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const paper = location.state?.paper || null;
+  const source = location.state?.source || "research";
+  
 
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const sendQuestion = async () => {
-    if (!question.trim()) return;
-    const userMsg = { role: "user", text: question };
-    setMessages((m) => [...m, userMsg]);
-    setLoading(true);
+ const sendQuestion = async () => {
+  if (!question.trim()) return;
+  const userMsg = { role: "user", text: question };
+  setMessages((m) => [...m, userMsg]);
+  setLoading(true);
 
-    try {
-      // Send only the topic and abstract to the backend so answers are scoped to this paper
-      const topic = paper?.title || "";
-      const abstract = paper?.description || paper?.abstract || "";
+  try {
+    let url = "";
+    let payload = {};
+    
 
-  const year = paper?.year || "";
-  const authors = paper?.authors || paper?.authors_list || paper?.author || "";
-  const payload = { topic, abstract, year, authors, question };
-
-      const response = await fetch("http://127.0.0.1:8000/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json();
-      const botMsg = { role: "bot", text: data.answer || "No answer." };
-      setMessages((m) => [...m, botMsg]);
-    } catch (err) {
-      setMessages((m) => [...m, { role: "bot", text: "Error contacting server." }]);
-    } finally {
-      setLoading(false);
-      setQuestion("");
+    if (source === "research") {
+      // First type of request
+      url = "http://127.0.0.1:8001/ask_research";
+      payload = {
+        topic: paper.title,
+        abstract: paper.description,
+        year: paper.year,
+        authors: paper.authors,
+        question,
+      };
+    } else if (source === "topicspark") {
+      // Second type of request
+      url = "http://127.0.0.1:8001/ask_topicspark";
+      payload = {
+        topic: paper.title,
+        abstract: paper.description,
+        type:paper.type,
+        question,
+      };
     }
-  };
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+    const botMsg = { role: "bot", text: data.answer || "No answer." };
+    setMessages((m) => [...m, botMsg]);
+  } catch (err) {
+    setMessages((m) => [...m, { role: "bot", text: "Error contacting server." }]);
+  } finally {
+    setLoading(false);
+    setQuestion("");
+  }
+};
+
 
   if (!paper) {
     return (
