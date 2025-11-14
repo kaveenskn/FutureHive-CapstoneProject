@@ -26,7 +26,7 @@ const ResearchAssistant = () => {
   useEffect(() => {
     const fetchDefault = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:5000/default");
+        const res = await fetch("http://127.0.0.1:5000/past/default");
         if (res.ok) {
           const data = await res.json();
           setResults(data.results || []);
@@ -41,7 +41,7 @@ const ResearchAssistant = () => {
   const handleSearch = async () => {
     if (!query.trim()) return;
     try {
-      const res = await fetch("http://127.0.0.1:5000/search", {
+      const res = await fetch("http://127.0.0.1:5000/past/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query, type: mapTypeForBackend(filters.type) }),

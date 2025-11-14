@@ -4,23 +4,17 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from textblob import TextBlob
 from langchain_core.documents import Document
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify,Blueprint
 from flask_cors import CORS
-from pymongo import MongoClient
+import os
+from dotenv import load_dotenv
+from database import get_db
 
-# -----------------------------
-# Flask App Setup
-# -----------------------------
-app = Flask(__name__)
-CORS(app)
+load_dotenv()
+past_papers=Blueprint("past_papers", __name__)
 
-# -----------------------------
-# MongoDB Connection
-# -----------------------------
-url = "mongodb+srv://shanmugarajakaveen4:kvn25533@cluster0.s7vzm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
-client = MongoClient(url)
-db = client["FutureHiveDB"]
+db=get_db()
 collection1 = db["Past_Research_projects"]
 collection2 = db["Capstone_projects"]
 
@@ -120,7 +114,7 @@ def search_projects(user_query, collection_type="research"):
 # -----------------------------
 # Flask Routes
 # -----------------------------
-@app.route('/default',methods=['GET'])
+@past_papers.route('/default',methods=['GET'])
 def default_pastpapers():
     try:
         t=request.args.get('type','research')
@@ -130,7 +124,7 @@ def default_pastpapers():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/search", methods=["POST"])
+@past_papers.route("/search", methods=["POST"])
 def search_api():
     try:
         data = request.get_json()
@@ -145,8 +139,4 @@ def search_api():
         print(f"Error in /search endpoint: {e}")
         return jsonify({"error": str(e)}), 500
 
-# -----------------------------
-# Run Flask App
-# -----------------------------
-if __name__ == "__main__":
-    app.run(debug=True)
+

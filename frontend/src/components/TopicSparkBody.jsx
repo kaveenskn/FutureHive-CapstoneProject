@@ -8,7 +8,6 @@ const TopicSparkBody = () => {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [showBookmarks, setShowBookmarks] = useState(false);
   const navigate = useNavigate();
 
   const types = [
@@ -91,12 +90,6 @@ const TopicSparkBody = () => {
     navigate("/chat", { state: { paper: project, source: "topicspark" } });
   };
 
-  const handleShowBookmarks = () => {
-    setShowBookmarks((prev) => !prev);
-  };
-
-  const bookmarkedProjects = projects.filter((p) => bookmarks.includes(p.id));
-
   return (
     <main className="flex-1 p-6">
       <div className="max-w-7xl mx-auto">
@@ -176,12 +169,6 @@ const TopicSparkBody = () => {
           <h2 className="text-2xl font-bold text-gray-900">
             Showing {filteredProjects.length} results
           </h2>
-          <button
-            onClick={handleShowBookmarks}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            {showBookmarks ? "Show All" : "Bookmarks"}
-          </button>
         </div>
 
         {/* ⚡ Loading Animation */}
@@ -195,68 +182,64 @@ const TopicSparkBody = () => {
         )}
 
         {/* Results Grid */}
-        {!loading && (showBookmarks ? bookmarkedProjects : filteredProjects)
-          .length > 0 && (
+        {!loading && filteredProjects.length > 0 && (
           <div className="md:grid-cols-3 grid grid-cols-1 gap-6">
-            {(showBookmarks ? bookmarkedProjects : filteredProjects).map(
-              (project) => (
-                <div
-                  key={project.id}
-                  className="flex flex-col justify-between rounded-xl hover:shadow-md p-6 transition-all duration-300 bg-white border border-gray-200 shadow-sm"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-2">
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          project.type === "Research"
-                            ? "bg-blue-100 text-blue-600"
-                            : "bg-green-100 text-green-600"
-                        }`}
-                      >
-                        {project.type}
+            {filteredProjects.map((project) => (
+              <div
+                key={project.id}
+                className="flex flex-col justify-between rounded-xl hover:shadow-md p-6 transition-all duration-300 bg-white border border-gray-200 shadow-sm"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center space-x-2">
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        project.type === "Research"
+                          ? "bg-blue-100 text-blue-600"
+                          : "bg-green-100 text-green-600"
+                      }`}
+                    >
+                      {project.type}
+                    </span>
+                    {project.isHot && (
+                      <span className="px-2 py-1 text-xs font-medium text-red-600 bg-red-100 rounded-full">
+                        HOT
                       </span>
-                      {project.isHot && (
-                        <span className="px-2 py-1 text-xs font-medium text-red-600 bg-red-100 rounded-full">
-                          HOT
-                        </span>
-                      )}
-                    </div>
-                    {project.tags.length > 0 && (
-                      <div className="flex space-x-1">
-                        {project.tags.map((tag, index) => (
-                          <span
-                            key={index}
-                            className="px-2 py-1 text-xs font-medium text-orange-600 bg-orange-100 rounded-full"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
                     )}
                   </div>
-
-                  <h3 className="mb-3 text-xl font-bold text-gray-900">
-                    {project.title}
-                  </h3>
-                  <p className="mb-6 leading-relaxed text-gray-600">
-                    {project.description}
-                  </p>
-
-                  <button
-                    onClick={() => navigateToChatbot(project)}
-                    className="bg-blue-600 hover:bg-blue-700 hover:scale-105 w-full px-4 py-3 font-semibold text-white transition-all duration-300 transform rounded-lg shadow-md mb-0"
-                  >
-                    Explore Project
-                  </button>
+                  {project.tags.length > 0 && (
+                    <div className="flex space-x-1">
+                      {project.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 text-xs font-medium text-orange-600 bg-orange-100 rounded-full"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )
-            )}
+
+                <h3 className="mb-3 text-xl font-bold text-gray-900">
+                  {project.title}
+                </h3>
+                <p className="mb-6 leading-relaxed text-gray-600">
+                  {project.description}
+                </p>
+
+                <button
+                  onClick={() => navigateToChatbot(project)}
+                  className="bg-blue-600 hover:bg-blue-700 hover:scale-105 w-full px-4 py-3 font-semibold text-white transition-all duration-300 transform rounded-lg shadow-md mb-0"
+                >
+                  Explore Project
+                </button>
+              </div>
+            ))}
           </div>
         )}
 
         {/* No results */}
-        {!loading && (showBookmarks ? bookmarkedProjects : filteredProjects)
-          .length === 0 && (
+        {!loading && filteredProjects.length === 0 && (
           <div className="text-center text-gray-500 text-lg py-10">
             No topics found.
           </div>
