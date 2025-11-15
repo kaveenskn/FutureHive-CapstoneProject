@@ -1,9 +1,39 @@
 # Ignore Python environment
 venv/
+env/
+*.venv
 
 # Ignore environment variables
 backend/.env
+.env
+.env.local
+.env.*.local
 
 # Ignore Python cache and compiled files
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Ignore Firebase credentials (NEVER COMMIT THESE)
+firebase-service-account.json
+Backend/firebase-service-account.json
+*-service-account.json
+**/*-service-account.json
+
+# Ignore all JSON credentials but allow specific config files
+*.json
+!package.json
+!FutureHive_API.postman_collection.json
+
+# Ignore database files
+*.db
+*.sqlite
+*.sqlite3
+

@@ -10,6 +10,34 @@ build/
 .env
 .env.local
 .env.*.local
+**/backend/.env
+**/Backend/.env
+
+# Firebase credentials (NEVER COMMIT THESE)
+firebase-service-account.json
+**/firebase-service-account.json
+Backend/firebase-service-account.json
+*-service-account.json
+**/*-service-account.json
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!vite.config.js
+!**/package.json
+
+# Python environment
+venv/
+**/venv/
+env/
+**/env/
+
+# Python cache and compiled files
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
 # IDE files
 .vscode/
