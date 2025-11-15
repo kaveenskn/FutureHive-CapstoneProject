@@ -1,0 +1,195 @@
+{
+  "info": {
+    "name": "FutureHive Firebase API",
+    "description": "API collection for testing Firebase user management endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5001/health",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5001",
+          "path": ["health"]
+        },
+        "description": "Check if API server is running"
+      }
+    },
+    {
+      "name": "Get All Users",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5001/api/users?page=1&limit=5",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5001",
+          "path": ["api", "users"],
+          "query": [
+            {
+              "key": "page",
+              "value": "1",
+              "description": "Page number"
+            },
+            {
+              "key": "limit",
+              "value": "5",
+              "description": "Items per page"
+            }
+          ]
+        },
+        "description": "Fetch all users with pagination"
+      }
+    },
+    {
+      "name": "Search Users",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5001/api/users?search=alice&page=1&limit=5",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5001",
+          "path": ["api", "users"],
+          "query": [
+            {
+              "key": "search",
+              "value": "alice",
+              "description": "Search by name or email"
+            },
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "5"
+            }
+          ]
+        },
+        "description": "Search users by name or email"
+      }
+    },
+    {
+      "name": "Get User by ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5001/api/users/:userId",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5001",
+          "path": ["api", "users", ":userId"],
+          "variable": [
+            {
+              "key": "userId",
+              "value": "YOUR_USER_ID_HERE",
+              "description": "Replace with actual user ID"
+            }
+          ]
+        },
+        "description": "Get a single user by ID"
+      }
+    },
+    {
+      "name": "Create User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"role\": \"User\",\n  \"status\": \"Active\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5001/api/users",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5001",
+          "path": ["api", "users"]
+        },
+        "description": "Create a new user"
+      }
+    },
+    {
+      "name": "Update User",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"John Doe Updated\",\n  \"role\": \"Admin\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5001/api/users/:userId",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5001",
+          "path": ["api", "users", ":userId"],
+          "variable": [
+            {
+              "key": "userId",
+              "value": "YOUR_USER_ID_HERE",
+              "description": "Replace with actual user ID"
+            }
+          ]
+        },
+        "description": "Update an existing user"
+      }
+    },
+    {
+      "name": "Delete User",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5001/api/users/:userId",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5001",
+          "path": ["api", "users", ":userId"],
+          "variable": [
+            {
+              "key": "userId",
+              "value": "YOUR_USER_ID_HERE",
+              "description": "Replace with actual user ID"
+            }
+          ]
+        },
+        "description": "Delete a user"
+      }
+    },
+    {
+      "name": "Get Dashboard Stats",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5001/api/dashboard/stats",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5001",
+          "path": ["api", "dashboard", "stats"]
+        },
+        "description": "Get dashboard statistics (total users, research entries, etc.)"
+      }
+    }
+  ]
+}
