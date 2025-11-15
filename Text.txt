@@ -1,1 +1,14 @@
 hello we are starting our project 
+
+cd D:\FutureHive-CapstoneProject\Backend
+node firebase_api_server.js
+
+............................................
+
+cd D:\FutureHive-CapstoneProject\Backend
+python admin_server.py
+
+............................................
+
+cd D:\FutureHive-CapstoneProject\frontend
+npm run dev

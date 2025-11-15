@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+
+// API Base URL
+const API_BASE_URL = "http://localhost:5001/api";
 
 const App = () => {
   const [currentPage, setCurrentPage] = useState("home");
@@ -89,34 +92,17 @@ const AIResearchAssistant = ({ onAccessAdmin }) => {
   );
 };
 const AdminPanel = ({ onBack }) => {
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      name: "Alice Johnson",
-      email: "alice@example.com",
-      role: "Admin",
-      status: "Active",
-    },
-    {
-      id: 2,
-      name: "Bob Smith",
-      email: "bob@example.com",
-      role: "User",
-      status: "Active",
-    },
-    {
-      id: 3,
-      name: "Carol White",
-      email: "carol@example.com",
-      role: "Moderator",
-      status: "Active",
-    },
-  ]);
+  const [users, setUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const usersPerPage = 5;
   const [activeSection, setActiveSection] = useState("users");
+  const [stats, setStats] = useState({
+    total_users: 0,
+    total_research: 0,
+    unsupervised_accounts: 0,
+  });
   const [researchEntries, setResearchEntries] = useState([
     {
       id: 1,
@@ -133,6 +119,45 @@ const AdminPanel = ({ onBack }) => {
       year: 2024,
     },
   ]);
+
+  // Fetch users from API
+  useEffect(() => {
+    fetchUsers();
+    fetchStats();
+  }, [currentPage, searchQuery]);
+
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/users?page=${currentPage}&limit=${usersPerPage}&search=${searchQuery}`
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        setUsers(data.users);
+      } else {
+        console.error("Failed to fetch users:", data.error);
+      }
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/dashboard/stats`);
+      const data = await response.json();
+
+      if (data.success) {
+        setStats(data.stats);
+      }
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+    }
+  };
 
   const handleEditResearch = (entry) => {
     console.log("Edit research:", entry);
@@ -152,31 +177,86 @@ const AdminPanel = ({ onBack }) => {
     e.target.value = null;
   };
 
-  const filteredUsers = users.filter(
-    (user) =>
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
+  const filteredUsers = users;
+  const totalUsers = users.length;
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
-  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+  const currentUsers = users;
+  const totalPages = Math.ceil(totalUsers / usersPerPage);
 
-  const handleView = (user) => {
-    console.log("Viewing user:", user);
-    alert(`Viewing details for ${user.name}`);
+  const handleView = async (user) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/${user.id}`);
+      const data = await response.json();
+
+      if (data.success) {
+        alert(
+          `User Details:\n\nName: ${data.user.name}\nEmail: ${data.user.email}\nRole: ${data.user.role}\nStatus: ${data.user.status}`
+        );
+      }
+    } catch (error) {
+      console.error("Error viewing user:", error);
+      alert("Failed to load user details");
+    }
   };
 
   const handleEdit = (user) => {
-    console.log("Editing user:", user);
-    alert(`Edit functionality for ${user.name} - Coming soon!`);
+    const newName = prompt("Enter new name:", user.name);
+    const newEmail = prompt("Enter new email:", user.email);
+    const newRole = prompt("Enter new role (Admin/User/Moderator):", user.role);
+
+    if (newName && newEmail && newRole) {
+      updateUser(user.id, {
+        name: newName,
+        email: newEmail,
+        role: newRole,
+      });
+    }
   };
 
-  const handleDelete = (user) => {
+  const updateUser = async (userId, updates) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updates),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert("User updated successfully!");
+        fetchUsers(); // Refresh the list
+      } else {
+        alert("Failed to update user: " + data.error);
+      }
+    } catch (error) {
+      console.error("Error updating user:", error);
+      alert("Failed to update user");
+    }
+  };
+
+  const handleDelete = async (user) => {
     if (window.confirm(`Are you sure you want to delete ${user.name}?`)) {
-      setUsers(users.filter((u) => u.id !== user.id));
-      console.log("Deleted user:", user);
+      try {
+        const response = await fetch(`${API_BASE_URL}/users/${user.id}`, {
+          method: "DELETE",
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert("User deleted successfully!");
+          fetchUsers(); // Refresh the list
+        } else {
+          alert("Failed to delete user: " + data.error);
+        }
+      } catch (error) {
+        console.error("Error deleting user:", error);
+        alert("Failed to delete user");
+      }
     }
   };
 
@@ -216,9 +296,11 @@ const AdminPanel = ({ onBack }) => {
                 </div>
               </div>
               <div className="ml-4">
-                <h3 className="text-2xl font-bold text-gray-900">9,247</h3>
+                <h3 className="text-2xl font-bold text-gray-900">
+                  {stats.total_users || 0}
+                </h3>
                 <p className="text-gray-600">Total Users</p>
-                <p className="mt-1 text-sm text-green-600">+1,247</p>
+                <p className="mt-1 text-sm text-green-600">Live data</p>
               </div>
             </div>
           </div>
@@ -243,9 +325,11 @@ const AdminPanel = ({ onBack }) => {
                 </div>
               </div>
               <div className="ml-4">
-                <h3 className="text-2xl font-bold text-gray-900">8,492</h3>
+                <h3 className="text-2xl font-bold text-gray-900">
+                  {stats.total_research || 0}
+                </h3>
                 <p className="text-gray-600">Research Entries</p>
-                <p className="mt-1 text-sm text-green-600">+12</p>
+                <p className="mt-1 text-sm text-green-600">Live data</p>
               </div>
             </div>
           </div>
@@ -270,9 +354,11 @@ const AdminPanel = ({ onBack }) => {
                 </div>
               </div>
               <div className="ml-4">
-                <h3 className="text-2xl font-bold text-gray-900">10</h3>
+                <h3 className="text-2xl font-bold text-gray-900">
+                  {stats.unsupervised_accounts || 0}
+                </h3>
                 <p className="text-gray-600">Unsupervised Account</p>
-                <p className="mt-1 text-sm text-green-600">+12</p>
+                <p className="mt-1 text-sm text-green-600">Live data</p>
               </div>
             </div>
           </div>
@@ -350,8 +436,8 @@ const AdminPanel = ({ onBack }) => {
                     </p>
                   </div>
                   <div className="text-sm text-gray-500">
-                    Total: {filteredUsers.length} user
-                    {filteredUsers.length !== 1 ? "s" : ""}
+                    Total: {totalUsers} user
+                    {totalUsers !== 1 ? "s" : ""}
                   </div>
                 </div>
 
@@ -549,18 +635,16 @@ const AdminPanel = ({ onBack }) => {
                 </table>
               </div>
 
-              {!isLoading && filteredUsers.length > 0 && (
+              {!isLoading && users.length > 0 && (
                 <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
                   <div className="text-sm text-gray-700">
                     Showing{" "}
                     <span className="font-medium">{indexOfFirstUser + 1}</span>{" "}
                     to{" "}
                     <span className="font-medium">
-                      {Math.min(indexOfLastUser, filteredUsers.length)}
+                      {Math.min(indexOfLastUser, totalUsers)}
                     </span>{" "}
-                    of{" "}
-                    <span className="font-medium">{filteredUsers.length}</span>{" "}
-                    results
+                    of <span className="font-medium">{totalUsers}</span> results
                   </div>
                   <div className="flex space-x-2">
                     <button
