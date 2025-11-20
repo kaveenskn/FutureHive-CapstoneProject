@@ -3,83 +3,17 @@ import { useParams, useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../components/Firebase";
 import { toast } from "react-toastify";
+import { mentorsData } from "./mentorsData";
 
 const MentorProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("about");
   const [message, setMessage] = useState("");
 
-  // Sample mentor data - in real app, fetch by ID from API
-  const mentor = {
-    id: 1,
-    name: "Dr. Amara Silva",
-    title: "Senior Lecturer",
-    organization: "University of Colombo",
-    department: "Department of Computer Science",
-    expertise: ["AI", "Machine Learning", "Data Science"],
-    bio: "Specialized in machine learning and artificial intelligence with a focus on natural language processing and computer vision. Published multiple papers in top-tier conferences and journals including IEEE Transactions and ACM conferences. Extensive experience in supervising undergraduate and graduate research projects.",
-    experience: "5+ years",
-    availability: "Available",
-    rating: 4.9,
-    projects: 24,
-    responseTime: "2-4 hours",
-    languages: ["English", "Sinhala"],
-    email: "amara.silva@cmb.ac.lk",
-    linkedin: "https://linkedin.com/in/amarasilva",
-    education: [
-      {
-        degree: "PhD in Computer Science",
-        institution: "University of Melbourne, Australia",
-        year: "2018",
-      },
-      {
-        degree: "MSc in Artificial Intelligence",
-        institution: "University of Moratuwa, Sri Lanka",
-        year: "2014",
-      },
-      {
-        degree: "BSc in Computer Science",
-        institution: "University of Colombo, Sri Lanka",
-        year: "2012",
-      },
-    ],
-    experienceHistory: [
-      {
-        position: "Senior Lecturer",
-        organization: "University of Colombo",
-        period: "2019 - Present",
-        description:
-          "Teaching machine learning and AI courses. Supervising research projects and mentoring students.",
-      },
-      {
-        position: "Research Scientist",
-        organization: "AI Research Lab",
-        period: "2018 - 2019",
-        description:
-          "Conducted research in natural language processing and computer vision applications.",
-      },
-      {
-        position: "Visiting Researcher",
-        organization: "Stanford AI Lab",
-        period: "2017",
-        description: "Collaborated on deep learning research projects.",
-      },
-    ],
-    areasOfInterest: [
-      "Natural Language Processing",
-      "Computer Vision",
-      "Deep Learning",
-      "AI Ethics",
-      "Machine Learning Applications",
-    ],
-    publications: [
-      "Silva, A. et al. (2023). 'Advanced NLP Techniques for Low-Resource Languages'. IEEE Transactions",
-      "Silva, A. & Perera, R. (2022). 'Computer Vision in Medical Imaging'. ACM Journal",
-      "Silva, A. (2021). 'Machine Learning Fundamentals'. Springer Publications",
-    ],
-  };
+  // Find mentor by ID
+  const mentor = mentorsData.find((m) => m.id === parseInt(id));
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -87,6 +21,14 @@ const MentorProfile = () => {
     });
     return () => unsub();
   }, []);
+
+  // Redirect if mentor not found
+  useEffect(() => {
+    if (!mentor) {
+      toast.error("Mentor not found");
+      navigate("/mentor-connect");
+    }
+  }, [mentor, navigate]);
 
   const handleSendMessage = () => {
     if (!user) {
@@ -110,8 +52,7 @@ const MentorProfile = () => {
       navigate("/signin");
       return;
     }
-
-    toast.success("Mentorship request sent!");
+    toast.success(`Mentorship request sent to ${mentor.name}!`);
   };
 
   const handleScheduleMeeting = () => {
@@ -120,13 +61,30 @@ const MentorProfile = () => {
       navigate("/signin");
       return;
     }
-
     toast.success("Meeting request sent to mentor!");
   };
 
+  if (!mentor) {
+    return (
+      <div className="bg-gradient-to-b from-blue-50 to-white flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="text-2xl font-bold text-gray-900">
+            Mentor Not Found
+          </div>
+          <button
+            onClick={() => navigate("/mentor-connect")}
+            className="hover:bg-blue-700 px-6 py-2 mt-4 text-white bg-blue-600 rounded-lg"
+          >
+            Back to Mentors
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gradient-to-b from-blue-50 to-white min-h-screen">
-      <div className="sm:px-6 lg:px-8 max-w-6xl px-4 py-8 mx-auto">
+      <div className="sm:px-6 lg:px-8 max-w-7xl px-4 py-8 mx-auto">
         {/* Back Button */}
         <button
           onClick={() => navigate("/mentor-connect")}
@@ -149,7 +107,7 @@ const MentorProfile = () => {
         </button>
 
         <div className="lg:grid-cols-4 grid grid-cols-1 gap-8">
-          {/* Sidebar */}
+          {/* Sidebar - Left Column */}
           <div className="lg:col-span-1">
             <div className="rounded-2xl top-8 sticky p-6 bg-white shadow-lg">
               {/* Mentor Photo */}
@@ -170,47 +128,72 @@ const MentorProfile = () => {
                 {mentor.organization}
               </p>
 
-              {/* Rating and Response Time */}
-              <div className="flex items-center justify-center mb-4">
-                <div className="flex items-center">
-                  <span className="text-lg text-yellow-500">★</span>
-                  <span className="ml-1 font-semibold text-gray-700">
-                    {mentor.rating}
-                  </span>
-                </div>
-                <span className="mx-2 text-gray-300">•</span>
-                <span className="text-sm text-gray-600">
-                  {mentor.responseTime} response
-                </span>
-              </div>
-
               {/* Availability Badge */}
               <div className="flex justify-center mb-6">
                 <span
                   className={`px-4 py-2 rounded-full text-sm font-medium ${
                     mentor.availability === "Available"
                       ? "bg-green-100 text-green-800"
-                      : "bg-yellow-100 text-yellow-800"
+                      : mentor.availability === "Limited"
+                      ? "bg-yellow-100 text-yellow-800"
+                      : "bg-red-100 text-red-800"
                   }`}
                 >
                   {mentor.availability}
                 </span>
               </div>
 
-              {/* Action Buttons - Updated sizes */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => navigate("/mentor-connect")}
-                  className="hover:bg-gray-50 flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors bg-white border border-gray-300 rounded-lg"
-                >
-                  View Profile
-                </button>
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="text-center">
+                  <div className="text-lg font-bold text-blue-600">
+                    EXPERIENCE
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {mentor.experience}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-blue-600">
+                    LANGUAGES
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {mentor.languages.join(", ")}
+                  </div>
+                </div>
+              </div>
 
+              {/* Project Types */}
+              <div className="mb-6">
+                <div className="mb-2 text-lg font-bold text-blue-600">
+                  PROJECT TYPES
+                </div>
+                <div className="space-y-2">
+                  {mentor.projectTypes.map((type, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center text-sm text-gray-600"
+                    >
+                      <span className="w-2 h-2 mr-2 bg-blue-500 rounded-full"></span>
+                      {type}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-3">
                 <button
                   onClick={handleRequestMentorship}
-                  className="hover:bg-blue-700 flex-1 px-4 py-2.5 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg"
+                  className="hover:bg-blue-700 w-full px-4 py-3 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg"
                 >
-                  Request Mentorship
+                  Send Mentorship Request
+                </button>
+                <button
+                  onClick={handleScheduleMeeting}
+                  className="hover:bg-gray-50 w-full px-4 py-3 text-sm font-medium text-gray-700 transition-colors bg-white border border-gray-300 rounded-lg"
+                >
+                  Book 15-min Meeting
                 </button>
               </div>
 
@@ -220,7 +203,7 @@ const MentorProfile = () => {
                   Contact Information
                 </h3>
                 <div className="space-y-2">
-                  <div className="flex items-center text-gray-600">
+                  <div className="flex items-center text-sm text-gray-600">
                     <svg
                       className="w-4 h-4 mr-2"
                       fill="none"
@@ -240,7 +223,7 @@ const MentorProfile = () => {
                     href={mentor.linkedin}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:text-blue-600 flex items-center text-gray-600"
+                    className="hover:text-blue-600 flex items-center text-sm text-gray-600"
                   >
                     <svg
                       className="w-4 h-4 mr-2"
@@ -253,35 +236,21 @@ const MentorProfile = () => {
                   </a>
                 </div>
               </div>
-
-              {/* Languages */}
-              <div className="pt-4 mt-4 border-t">
-                <h3 className="mb-2 font-semibold text-gray-900">Languages</h3>
-                <div className="flex flex-wrap gap-2">
-                  {mentor.languages.map((language, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 text-sm text-gray-700 bg-gray-100 rounded-full"
-                    >
-                      {language}
-                    </span>
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
 
-          {/* Main Content */}
+          {/* Main Content - Right Column */}
           <div className="lg:col-span-3">
             {/* Navigation Tabs */}
             <div className="rounded-2xl mb-6 bg-white shadow-lg">
               <div className="flex overflow-x-auto">
                 {[
-                  "overview",
+                  "about",
+                  "skills",
+                  "publications",
+                  "success",
                   "experience",
                   "education",
-                  "publications",
-                  "reviews",
                 ].map((tab) => (
                   <button
                     key={tab}
@@ -292,7 +261,7 @@ const MentorProfile = () => {
                         : "text-gray-600 hover:text-gray-900"
                     }`}
                   >
-                    {tab}
+                    {tab === "success" ? "Success Stories" : tab}
                   </button>
                 ))}
               </div>
@@ -300,19 +269,19 @@ const MentorProfile = () => {
 
             {/* Content Sections */}
             <div className="rounded-2xl p-6 mb-6 bg-white shadow-lg">
-              {activeTab === "overview" && (
+              {activeTab === "about" && (
                 <div>
                   <h2 className="mb-4 text-2xl font-bold text-gray-900">
-                    Professional Overview
+                    About
                   </h2>
                   <p className="mb-6 leading-relaxed text-gray-600">
-                    {mentor.bio}
+                    {mentor.detailedBio}
                   </p>
 
-                  <h3 className="mb-3 text-lg font-semibold text-gray-900">
-                    Areas of Expertise
+                  <h3 className="mb-4 text-xl font-semibold text-gray-900">
+                    Expertise
                   </h3>
-                  <div className="flex flex-wrap gap-2 mb-6">
+                  <div className="flex flex-wrap gap-2 mb-8">
                     {mentor.expertise.map((exp, index) => (
                       <span
                         key={index}
@@ -323,17 +292,85 @@ const MentorProfile = () => {
                     ))}
                   </div>
 
-                  <h3 className="mb-3 text-lg font-semibold text-gray-900">
+                  <h3 className="mb-4 text-xl font-semibold text-gray-900">
                     Research Interests
                   </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {mentor.areasOfInterest.map((interest, index) => (
-                      <span
+                  <div className="md:grid-cols-2 grid grid-cols-1 gap-2">
+                    {mentor.researchInterests.map((interest, index) => (
+                      <div key={index} className="flex items-center">
+                        <span className="w-2 h-2 mr-3 bg-blue-500 rounded-full"></span>
+                        <span className="text-gray-700">{interest}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "skills" && (
+                <div>
+                  <h2 className="mb-6 text-2xl font-bold text-gray-900">
+                    Top Skills & Technologies
+                  </h2>
+                  <div className="md:grid-cols-3 lg:grid-cols-6 grid grid-cols-2 gap-4">
+                    {mentor.skills.map((skill, index) => (
+                      <div
                         key={index}
-                        className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-full"
+                        className="bg-gray-50 hover:bg-blue-50 p-4 text-center transition-colors rounded-lg"
                       >
-                        {interest}
-                      </span>
+                        <div className="font-medium text-gray-900">{skill}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "publications" && (
+                <div>
+                  <h2 className="mb-6 text-2xl font-bold text-gray-900">
+                    Publications
+                  </h2>
+                  <div className="space-y-6">
+                    {mentor.publications.map((pub, index) => (
+                      <div
+                        key={index}
+                        className="py-2 pl-4 border-l-4 border-blue-500"
+                      >
+                        <h3 className="font-semibold text-gray-900">
+                          {pub.title}
+                        </h3>
+                        <p className="text-gray-600">
+                          {pub.journal} • {pub.year}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "success" && (
+                <div>
+                  <h2 className="mb-6 text-2xl font-bold text-gray-900">
+                    Past Mentorship Success Stories
+                  </h2>
+                  <div className="space-y-6">
+                    {mentor.successStories.map((story, index) => (
+                      <div
+                        key={index}
+                        className="last:border-b-0 pb-6 border-b border-gray-200"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {story.student}
+                          </h3>
+                          <span className="px-3 py-1 text-sm text-gray-500 bg-gray-100 rounded-full">
+                            {story.year}
+                          </span>
+                        </div>
+                        <p className="mb-2 font-medium text-gray-700">
+                          {story.project}
+                        </p>
+                        <p className="text-gray-600">{story.achievement}</p>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -341,7 +378,7 @@ const MentorProfile = () => {
 
               {activeTab === "experience" && (
                 <div>
-                  <h2 className="mb-4 text-2xl font-bold text-gray-900">
+                  <h2 className="mb-6 text-2xl font-bold text-gray-900">
                     Professional Experience
                   </h2>
                   <div className="space-y-6">
@@ -365,7 +402,7 @@ const MentorProfile = () => {
 
               {activeTab === "education" && (
                 <div>
-                  <h2 className="mb-4 text-2xl font-bold text-gray-900">
+                  <h2 className="mb-6 text-2xl font-bold text-gray-900">
                     Education
                   </h2>
                   <div className="space-y-4">
@@ -388,58 +425,12 @@ const MentorProfile = () => {
                   </div>
                 </div>
               )}
-
-              {activeTab === "publications" && (
-                <div>
-                  <h2 className="mb-4 text-2xl font-bold text-gray-900">
-                    Selected Publications
-                  </h2>
-                  <div className="space-y-4">
-                    {mentor.publications.map((pub, index) => (
-                      <div
-                        key={index}
-                        className="last:border-b-0 pb-4 border-b border-gray-100"
-                      >
-                        <p className="text-gray-700">{pub}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "reviews" && (
-                <div>
-                  <h2 className="mb-4 text-2xl font-bold text-gray-900">
-                    Student Reviews
-                  </h2>
-                  <div className="py-8 text-center">
-                    <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full">
-                      <svg
-                        className="w-8 h-8 text-gray-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                        />
-                      </svg>
-                    </div>
-                    <p className="text-gray-600">
-                      No reviews yet. Be the first to review this mentor!
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Quick Message Section */}
             <div className="rounded-2xl p-6 bg-white shadow-lg">
               <h3 className="mb-4 text-lg font-semibold text-gray-900">
-                Send a Message
+                Send a Quick Message
               </h3>
               <textarea
                 value={message}

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../components/Firebase";
 import { toast } from "react-toastify";
+import { mentorsData } from "./mentorsData";
 
 const MentorConnect = () => {
   const navigate = useNavigate();
@@ -13,10 +14,9 @@ const MentorConnect = () => {
     projectType: "All Types",
     experienceLevel: "All Levels",
     availability: "Any",
-    language: "English",
+    language: "All Languages",
   });
 
-  const [mentors, setMentors] = useState([]);
   const [filteredMentors, setFilteredMentors] = useState([]);
 
   const researchAreas = [
@@ -32,9 +32,10 @@ const MentorConnect = () => {
 
   const projectTypes = [
     "All Types",
-    "Capstone",
-    "Industry Research",
+    "Capstone Project",
+    "Final Year Project",
     "Academic Research",
+    "Industry Research",
     "Publication Support",
   ];
 
@@ -42,101 +43,7 @@ const MentorConnect = () => {
 
   const availabilityOptions = ["Any", "Available", "Limited", "Not Available"];
 
-  const languages = ["Sinhala", "Tamil", "English"];
-
-  // Sample mentor data based on your screenshots
-  const sampleMentors = [
-    {
-      id: 1,
-      name: "Dr. Amara Silva",
-      title: "Senior Lecturer",
-      organization: "University of Colombo",
-      expertise: ["AI", "Machine Learning", "Data Science"],
-      bio: "Specialized in machine learning and artificial intelligence with a focus on natural language processing and computer vision. Published multiple papers in top-tier conferences and journals.",
-      experience: "5+ years",
-      availability: "Available",
-      rating: 4.9,
-      projects: 24,
-      responseTime: "2-4 hours",
-      languages: ["English", "Sinhala"],
-      image: "/api/placeholder/100/100",
-    },
-    {
-      id: 2,
-      name: "Prof. Rajesh Kumar",
-      title: "Professor of Computer Science",
-      organization: "University of Moratuwa",
-      expertise: ["Cybersecurity"],
-      bio: "Leading expert in cybersecurity and network protocols, industry consultant for major tech firms with extensive experience in IoT security and network infrastructure protection.",
-      experience: "5+ years",
-      availability: "Limited",
-      rating: 4.8,
-      projects: 18,
-      responseTime: "1-2 days",
-      languages: ["English", "Tamil"],
-      image: "/api/placeholder/100/100",
-    },
-    {
-      id: 3,
-      name: "Dr. Nimesha Jayasinghe",
-      title: "Research Engineer",
-      organization: "Tech Solutions Lanka",
-      expertise: ["Software Engineering"],
-      bio: "Industry researcher focused on practical applications of machine learning in software development. Experienced in agile methodologies and DevOps practices.",
-      experience: "3-5 years",
-      availability: "Available",
-      rating: 4.7,
-      projects: 15,
-      responseTime: "Same day",
-      languages: ["English", "Sinhala"],
-      image: "/api/placeholder/100/100",
-    },
-    {
-      id: 4,
-      name: "Dr. Mohamed Ismail",
-      title: "Associate Professor",
-      organization: "SLIIT",
-      expertise: ["AI", "IoT", "Data Science"],
-      bio: "Expert in artificial intelligence applications for IoT ecosystems. Published author with extensive experience supervising graduate research projects.",
-      experience: "5+ years",
-      availability: "Available",
-      rating: 4.9,
-      projects: 22,
-      responseTime: "2-4 hours",
-      languages: ["English", "Tamil"],
-      image: "/api/placeholder/100/100",
-    },
-    {
-      id: 5,
-      name: "Ms. Samantha Perera",
-      title: "Senior Data Scientist",
-      organization: "DataCorp International",
-      expertise: ["Data Science"],
-      bio: "Data science practitioner with strong background in predictive analytics and business intelligence. Mentor for aspiring data scientists and analytics professionals.",
-      experience: "3-5 years",
-      availability: "Limited",
-      rating: 4.6,
-      projects: 12,
-      responseTime: "3-5 days",
-      languages: ["English", "Sinhala"],
-      image: "/api/placeholder/100/100",
-    },
-    {
-      id: 6,
-      name: "Dr. Lakshmi Nadarajan",
-      title: "Head of AI Research",
-      organization: "Innovation Labs",
-      expertise: ["AI", "Machine Learning", "Software Engineering"],
-      bio: "Leading AI researcher with focus on ethical AI and responsible machine learning. Former academic turned industry leader with extensive publication record.",
-      experience: "5+ years",
-      availability: "Limited",
-      rating: 4.9,
-      projects: 31,
-      responseTime: "1 week",
-      languages: ["English", "Tamil"],
-      image: "/api/placeholder/100/100",
-    },
-  ];
+  const languages = ["All Languages", "English", "Sinhala", "Tamil"];
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -146,12 +53,7 @@ const MentorConnect = () => {
   }, []);
 
   useEffect(() => {
-    setMentors(sampleMentors);
-    setFilteredMentors(sampleMentors);
-  }, []);
-
-  useEffect(() => {
-    let results = mentors;
+    let results = mentorsData;
 
     // Search filter
     if (searchQuery) {
@@ -163,6 +65,9 @@ const MentorConnect = () => {
             .includes(searchQuery.toLowerCase()) ||
           mentor.expertise.some((exp) =>
             exp.toLowerCase().includes(searchQuery.toLowerCase())
+          ) ||
+          mentor.skills.some((skill) =>
+            skill.toLowerCase().includes(searchQuery.toLowerCase())
           )
       );
     }
@@ -174,15 +79,22 @@ const MentorConnect = () => {
       );
     }
 
+    // Project type filter
+    if (filters.projectType !== "All Types") {
+      results = results.filter((mentor) =>
+        mentor.projectTypes.includes(filters.projectType)
+      );
+    }
+
     // Experience level filter
     if (filters.experienceLevel !== "All Levels") {
       results = results.filter((mentor) => {
+        const expYears = parseInt(mentor.experience);
         if (filters.experienceLevel === "1-3 years")
-          return mentor.experience === "1-3 years";
+          return expYears >= 1 && expYears <= 3;
         if (filters.experienceLevel === "3-5 years")
-          return mentor.experience === "3-5 years";
-        if (filters.experienceLevel === "5+ years")
-          return mentor.experience === "5+ years";
+          return expYears >= 3 && expYears <= 5;
+        if (filters.experienceLevel === "5+ years") return expYears >= 5;
         return true;
       });
     }
@@ -197,14 +109,14 @@ const MentorConnect = () => {
     }
 
     // Language filter
-    if (filters.language) {
+    if (filters.language !== "All Languages") {
       results = results.filter((mentor) =>
         mentor.languages.includes(filters.language)
       );
     }
 
     setFilteredMentors(results);
-  }, [searchQuery, filters, mentors]);
+  }, [searchQuery, filters]);
 
   const handleFilterChange = (filterType, value) => {
     setFilters((prev) => ({
@@ -223,7 +135,19 @@ const MentorConnect = () => {
   };
 
   const handleViewProfile = (mentorId) => {
+    console.log("Navigating to mentor profile:", mentorId);
     navigate(`/mentor-profile/${mentorId}`);
+  };
+
+  const clearAllFilters = () => {
+    setFilters({
+      researchArea: "All Areas",
+      projectType: "All Types",
+      experienceLevel: "All Levels",
+      availability: "Any",
+      language: "All Languages",
+    });
+    setSearchQuery("");
   };
 
   return (
@@ -241,11 +165,11 @@ const MentorConnect = () => {
         </div>
 
         {/* Search Bar */}
-        <div className="max-w-4xl mx-auto mb-12">
+        <div className="max-w-4xl mx-auto mb-8">
           <div className="relative">
             <input
               type="text"
-              placeholder="Search by name, organization, or expertise..."
+              placeholder="Search by name, organization, expertise, or skills..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full px-6 py-4 text-lg border border-gray-300 shadow-sm"
@@ -267,6 +191,91 @@ const MentorConnect = () => {
                 </svg>
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* Active Filters & Clear Button */}
+        <div className="max-w-4xl mx-auto mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap gap-2">
+              {filters.researchArea !== "All Areas" && (
+                <span className="flex items-center px-3 py-1 text-sm text-blue-800 bg-blue-100 rounded-full">
+                  {filters.researchArea}
+                  <button
+                    onClick={() =>
+                      handleFilterChange("researchArea", "All Areas")
+                    }
+                    className="hover:text-blue-900 ml-2"
+                  >
+                    ×
+                  </button>
+                </span>
+              )}
+              {filters.projectType !== "All Types" && (
+                <span className="flex items-center px-3 py-1 text-sm text-green-800 bg-green-100 rounded-full">
+                  {filters.projectType}
+                  <button
+                    onClick={() =>
+                      handleFilterChange("projectType", "All Types")
+                    }
+                    className="hover:text-green-900 ml-2"
+                  >
+                    ×
+                  </button>
+                </span>
+              )}
+              {filters.experienceLevel !== "All Levels" && (
+                <span className="flex items-center px-3 py-1 text-sm text-purple-800 bg-purple-100 rounded-full">
+                  {filters.experienceLevel}
+                  <button
+                    onClick={() =>
+                      handleFilterChange("experienceLevel", "All Levels")
+                    }
+                    className="hover:text-purple-900 ml-2"
+                  >
+                    ×
+                  </button>
+                </span>
+              )}
+              {filters.availability !== "Any" && (
+                <span className="flex items-center px-3 py-1 text-sm text-orange-800 bg-orange-100 rounded-full">
+                  {filters.availability}
+                  <button
+                    onClick={() => handleFilterChange("availability", "Any")}
+                    className="hover:text-orange-900 ml-2"
+                  >
+                    ×
+                  </button>
+                </span>
+              )}
+              {filters.language !== "All Languages" && (
+                <span className="flex items-center px-3 py-1 text-sm text-red-800 bg-red-100 rounded-full">
+                  {filters.language}
+                  <button
+                    onClick={() =>
+                      handleFilterChange("language", "All Languages")
+                    }
+                    className="hover:text-red-900 ml-2"
+                  >
+                    ×
+                  </button>
+                </span>
+              )}
+            </div>
+
+            {(filters.researchArea !== "All Areas" ||
+              filters.projectType !== "All Types" ||
+              filters.experienceLevel !== "All Levels" ||
+              filters.availability !== "Any" ||
+              filters.language !== "All Languages" ||
+              searchQuery) && (
+              <button
+                onClick={clearAllFilters}
+                className="hover:text-gray-900 text-sm text-gray-600 underline"
+              >
+                Clear all filters
+              </button>
+            )}
           </div>
         </div>
 
@@ -395,7 +404,8 @@ const MentorConnect = () => {
             Available Mentors
           </h2>
           <span className="text-gray-600">
-            {filteredMentors.length} mentors found
+            {filteredMentors.length}{" "}
+            {filteredMentors.length === 1 ? "mentor" : "mentors"} found
           </span>
         </div>
 
@@ -430,7 +440,7 @@ const MentorConnect = () => {
 
                 {/* Expertise Tags */}
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {mentor.expertise.map((exp, index) => (
+                  {mentor.expertise.slice(0, 3).map((exp, index) => (
                     <span
                       key={index}
                       className="px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 rounded-full"
@@ -438,6 +448,11 @@ const MentorConnect = () => {
                       {exp}
                     </span>
                   ))}
+                  {mentor.expertise.length > 3 && (
+                    <span className="px-3 py-1 text-sm text-gray-600 bg-gray-100 rounded-full">
+                      +{mentor.expertise.length - 3} more
+                    </span>
+                  )}
                 </div>
 
                 {/* Bio */}
@@ -445,10 +460,33 @@ const MentorConnect = () => {
                   {mentor.bio}
                 </p>
 
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="text-center">
+                    <div className="text-sm font-semibold text-blue-600">
+                      EXPERIENCE
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      {mentor.experience}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-sm font-semibold text-blue-600">
+                      PROJECTS
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      {mentor.projects}+ guided
+                    </div>
+                  </div>
+                </div>
+
                 {/* Experience and Availability */}
                 <div className="flex items-center justify-between mb-4">
-                  <div className="text-sm text-gray-600">
-                    <strong>Experience:</strong> {mentor.experience}
+                  <div className="flex items-center text-sm text-gray-600">
+                    <span className="mr-1 text-yellow-500">★</span>
+                    <span className="font-semibold">{mentor.rating}</span>
+                    <span className="mx-1">•</span>
+                    <span>{mentor.responseTime} response</span>
                   </div>
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -463,7 +501,21 @@ const MentorConnect = () => {
                   </span>
                 </div>
 
-                {/* Action Buttons - Updated sizes */}
+                {/* Languages */}
+                <div className="mb-4">
+                  <div className="flex flex-wrap gap-1">
+                    {mentor.languages.map((language, index) => (
+                      <span
+                        key={index}
+                        className="px-2 py-1 text-xs text-gray-600 bg-gray-100 rounded"
+                      >
+                        {language}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
                 <div className="flex space-x-3">
                   <button
                     onClick={() => handleViewProfile(mentor.id)}
@@ -504,9 +556,15 @@ const MentorConnect = () => {
             <h3 className="mb-2 text-xl font-semibold text-gray-900">
               No mentors found
             </h3>
-            <p className="text-gray-600">
+            <p className="mb-4 text-gray-600">
               Try adjusting your search criteria or filters
             </p>
+            <button
+              onClick={clearAllFilters}
+              className="hover:bg-blue-50 px-6 py-2 text-blue-600 border border-blue-600 rounded-lg"
+            >
+              Clear all filters
+            </button>
           </div>
         )}
 
@@ -514,11 +572,15 @@ const MentorConnect = () => {
         <div className="rounded-2xl p-8 bg-white shadow-lg">
           <div className="md:grid-cols-4 grid grid-cols-1 gap-8 text-center">
             <div>
-              <div className="mb-2 text-3xl font-bold text-blue-600">50+</div>
+              <div className="mb-2 text-3xl font-bold text-blue-600">
+                {mentorsData.length}+
+              </div>
               <div className="text-gray-600">Expert Mentors</div>
             </div>
             <div>
-              <div className="mb-2 text-3xl font-bold text-blue-600">500+</div>
+              <div className="mb-2 text-3xl font-bold text-blue-600">
+                {mentorsData.reduce((sum, mentor) => sum + mentor.projects, 0)}+
+              </div>
               <div className="text-gray-600">Projects Guided</div>
             </div>
             <div>
