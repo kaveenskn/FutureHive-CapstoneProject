@@ -5,6 +5,7 @@ env/
 
 # Ignore environment variables
 backend/.env
+Backend/.env
 .env
 .env.local
 .env.*.local
