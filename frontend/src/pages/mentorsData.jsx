@@ -5,7 +5,7 @@ export const mentorsData = [
     title: "Senior Lecturer",
     organization: "University of Colombo",
     department: "Department of Computer Science",
-    expertise: ["AI", "Machine Learning", "Data Science"],
+    expertise: ["Machine Learning", "Data Science", "Computer Vision"],
     bio: "Specialized in machine learning and artificial intelligence with a focus on natural language processing and computer vision. Published researcher with 15+ papers in top-tier conferences.",
     detailedBio:
       "Specialized in machine learning and artificial intelligence with a focus on natural language processing and computer vision. Published multiple papers in top-tier conferences and journals including IEEE Transactions and ACM conferences. Extensive experience in supervising undergraduate and graduate research projects.",
