@@ -197,20 +197,20 @@ const MentorProfile = () => {
                 </span>
               </div>
 
-              {/* Action Buttons */}
-              <div className="space-y-3">
+              {/* Action Buttons - Updated sizes */}
+              <div className="flex gap-3">
                 <button
-                  onClick={handleRequestMentorship}
-                  className="hover:bg-blue-700 w-full py-3 font-medium text-white transition-colors bg-blue-600 rounded-lg"
+                  onClick={() => navigate("/mentor-connect")}
+                  className="hover:bg-gray-50 flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors bg-white border border-gray-300 rounded-lg"
                 >
-                  Request Mentorship
+                  View Profile
                 </button>
 
                 <button
-                  onClick={handleScheduleMeeting}
-                  className="hover:bg-blue-50 w-full py-3 font-medium text-blue-600 transition-colors bg-white border border-blue-600 rounded-lg"
+                  onClick={handleRequestMentorship}
+                  className="hover:bg-blue-700 flex-1 px-4 py-2.5 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg"
                 >
-                  Schedule Meeting
+                  Request Mentorship
                 </button>
               </div>
 
@@ -285,7 +285,7 @@ const MentorProfile = () => {
                 ].map((tab) => (
                   <button
                     key={tab}
-                    onClick={() => setActiveSection(tab)}
+                    onClick={() => setActiveTab(tab)}
                     className={`flex-1 py-4 px-6 text-sm font-medium capitalize transition-colors ${
                       activeTab === tab
                         ? "text-blue-600 border-b-2 border-blue-600"

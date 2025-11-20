@@ -272,10 +272,10 @@ const MentorConnect = () => {
 
         {/* Filters Section */}
         <div className="rounded-2xl p-6 mb-8 bg-white shadow-lg">
-          <div className="md:grid-cols-2 lg:grid-cols-5 grid grid-cols-1 gap-6">
+          <div className="space-y-8">
             {/* Research Area Filter */}
             <div>
-              <label className="block mb-3 text-sm font-semibold text-gray-700">
+              <label className="block mb-3 text-sm font-semibold text-gray-700 uppercase">
                 RESEARCH AREA
               </label>
               <div className="flex flex-wrap gap-2">
@@ -283,10 +283,10 @@ const MentorConnect = () => {
                   <button
                     key={area}
                     onClick={() => handleFilterChange("researchArea", area)}
-                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                    className={`px-4 py-2.5 text-sm rounded-lg border transition-colors ${
                       filters.researchArea === area
-                        ? "bg-blue-600 text-white border-blue-600"
-                        : "bg-white text-gray-700 border-gray-300 hover:border-blue-600"
+                        ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                        : "bg-white text-gray-700 border-gray-300 hover:border-blue-600 hover:text-blue-600"
                     }`}
                   >
                     {area}
@@ -297,7 +297,7 @@ const MentorConnect = () => {
 
             {/* Project Type Filter */}
             <div>
-              <label className="block mb-3 text-sm font-semibold text-gray-700">
+              <label className="block mb-3 text-sm font-semibold text-gray-700 uppercase">
                 PROJECT TYPE
               </label>
               <div className="flex flex-wrap gap-2">
@@ -305,10 +305,10 @@ const MentorConnect = () => {
                   <button
                     key={type}
                     onClick={() => handleFilterChange("projectType", type)}
-                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                    className={`px-4 py-2.5 text-sm rounded-lg border transition-colors ${
                       filters.projectType === type
-                        ? "bg-blue-600 text-white border-blue-600"
-                        : "bg-white text-gray-700 border-gray-300 hover:border-blue-600"
+                        ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                        : "bg-white text-gray-700 border-gray-300 hover:border-blue-600 hover:text-blue-600"
                     }`}
                   >
                     {type}
@@ -319,7 +319,7 @@ const MentorConnect = () => {
 
             {/* Experience Level Filter */}
             <div>
-              <label className="block mb-3 text-sm font-semibold text-gray-700">
+              <label className="block mb-3 text-sm font-semibold text-gray-700 uppercase">
                 EXPERIENCE LEVEL
               </label>
               <div className="flex flex-wrap gap-2">
@@ -327,10 +327,10 @@ const MentorConnect = () => {
                   <button
                     key={level}
                     onClick={() => handleFilterChange("experienceLevel", level)}
-                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                    className={`px-4 py-2.5 text-sm rounded-lg border transition-colors ${
                       filters.experienceLevel === level
-                        ? "bg-blue-600 text-white border-blue-600"
-                        : "bg-white text-gray-700 border-gray-300 hover:border-blue-600"
+                        ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                        : "bg-white text-gray-700 border-gray-300 hover:border-blue-600 hover:text-blue-600"
                     }`}
                   >
                     {level}
@@ -339,49 +339,51 @@ const MentorConnect = () => {
               </div>
             </div>
 
-            {/* Availability Filter */}
-            <div>
-              <label className="block mb-3 text-sm font-semibold text-gray-700">
-                AVAILABILITY
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {availabilityOptions.map((availability) => (
-                  <button
-                    key={availability}
-                    onClick={() =>
-                      handleFilterChange("availability", availability)
-                    }
-                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                      filters.availability === availability
-                        ? "bg-blue-600 text-white border-blue-600"
-                        : "bg-white text-gray-700 border-gray-300 hover:border-blue-600"
-                    }`}
-                  >
-                    {availability}
-                  </button>
-                ))}
+            <div className="md:grid-cols-2 grid grid-cols-1 gap-6">
+              {/* Availability Filter */}
+              <div>
+                <label className="block mb-3 text-sm font-semibold text-gray-700 uppercase">
+                  AVAILABILITY
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {availabilityOptions.map((availability) => (
+                    <button
+                      key={availability}
+                      onClick={() =>
+                        handleFilterChange("availability", availability)
+                      }
+                      className={`px-4 py-2.5 text-sm rounded-lg border transition-colors ${
+                        filters.availability === availability
+                          ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                          : "bg-white text-gray-700 border-gray-300 hover:border-blue-600 hover:text-blue-600"
+                      }`}
+                    >
+                      {availability}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* Language Filter */}
-            <div>
-              <label className="block mb-3 text-sm font-semibold text-gray-700">
-                LANGUAGE
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {languages.map((language) => (
-                  <button
-                    key={language}
-                    onClick={() => handleFilterChange("language", language)}
-                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                      filters.language === language
-                        ? "bg-blue-600 text-white border-blue-600"
-                        : "bg-white text-gray-700 border-gray-300 hover:border-blue-600"
-                    }`}
-                  >
-                    {language}
-                  </button>
-                ))}
+              {/* Language Filter */}
+              <div>
+                <label className="block mb-3 text-sm font-semibold text-gray-700 uppercase">
+                  LANGUAGE
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {languages.map((language) => (
+                    <button
+                      key={language}
+                      onClick={() => handleFilterChange("language", language)}
+                      className={`px-4 py-2.5 text-sm rounded-lg border transition-colors ${
+                        filters.language === language
+                          ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                          : "bg-white text-gray-700 border-gray-300 hover:border-blue-600 hover:text-blue-600"
+                      }`}
+                    >
+                      {language}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -461,17 +463,17 @@ const MentorConnect = () => {
                   </span>
                 </div>
 
-                {/* Action Buttons */}
+                {/* Action Buttons - Updated sizes */}
                 <div className="flex space-x-3">
                   <button
                     onClick={() => handleViewProfile(mentor.id)}
-                    className="hover:bg-gray-50 flex-1 px-4 py-2 font-medium text-gray-700 transition-colors bg-white border border-gray-300 rounded-lg"
+                    className="hover:bg-gray-50 flex-1 px-3 py-2 text-sm font-medium text-gray-700 transition-colors bg-white border border-gray-300 rounded-lg"
                   >
                     View Profile
                   </button>
                   <button
                     onClick={() => handleRequestMentorship(mentor)}
-                    className="hover:bg-blue-700 flex-1 px-4 py-2 font-medium text-white transition-colors bg-blue-600 rounded-lg"
+                    className="hover:bg-blue-700 flex-1 px-3 py-2 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg"
                   >
                     Request Mentorship
                   </button>
