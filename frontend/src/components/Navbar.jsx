@@ -4,10 +4,9 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "../components/Firebase";
 import { ToastContainer, toast } from "react-toastify";
 
-
 const Navbar = () => {
   const navigate = useNavigate();
-  const [isMenuOpen, setIsMenuOpen] = useState(false); // State to toggle menu
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -51,18 +50,21 @@ const Navbar = () => {
             >
               Search
             </button>
+
             <button
               className="px-4 py-2 text-gray-700 hover:text-blue-600 font-semibold"
               onClick={() => handleProtectedNavigation("/projects")}
             >
               Projects
             </button>
+
             <button
               className="px-4 py-2 text-gray-700 hover:text-blue-600 font-semibold"
               onClick={() => handleProtectedNavigation("/recommendations")}
             >
               Recommendations
             </button>
+
             {!user ? (
               <button
                 className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 font-semibold"
@@ -79,6 +81,7 @@ const Navbar = () => {
                 >
                   {((user.displayName || user.email || "")[0] || "").toUpperCase()}
                 </div>
+
                 <button
                   onClick={handleSignOut}
                   className="px-3 py-1 border rounded text-sm"
@@ -121,15 +124,27 @@ const Navbar = () => {
         {isMenuOpen && (
           <div className="md:hidden bg-white border-t">
             <div className="flex flex-col items-center gap-4 py-4">
+
               <button
                 className="px-4 py-2 text-gray-700 hover:text-blue-600 font-semibold"
                 onClick={() => {
-                  handleProtectedNavigation("/search");
+                  handleProtectedNavigation("/researchhub");
                   setIsMenuOpen(false);
                 }}
               >
                 Search
               </button>
+
+              <button
+                className="px-4 py-2 text-gray-700 hover:text-blue-600 font-semibold"
+                onClick={() => {
+                  handleProtectedNavigation("/projects");
+                  setIsMenuOpen(false);
+                }}
+              >
+                Projects
+              </button>
+
               <button
                 className="px-4 py-2 text-gray-700 hover:text-blue-600 font-semibold"
                 onClick={() => {
@@ -139,22 +154,35 @@ const Navbar = () => {
               >
                 Recommendations
               </button>
-              <button
-                className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 font-semibold"
-                onClick={() => {
-                  navigate("/auth");
-                  setIsMenuOpen(false);
-                }}
-              >
-                Sign In
-              </button>
+
+              {!user ? (
+                <button
+                  className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 font-semibold"
+                  onClick={() => {
+                    navigate("/signin");
+                    setIsMenuOpen(false);
+                  }}
+                >
+                  Sign In
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    handleSignOut();
+                    setIsMenuOpen(false);
+                  }}
+                  className="px-4 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-50 font-semibold"
+                >
+                  Sign Out
+                </button>
+              )}
             </div>
           </div>
         )}
       </nav>
-      {/* Toast Container */}
-      <ToastContainer  autoClose={1000} closeOnClick />
 
+      {/* Toast Container */}
+      <ToastContainer autoClose={1000} closeOnClick />
     </>
   );
 };

@@ -4,7 +4,7 @@ import { gsap } from "gsap";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../components/Firebase";
 import { toast } from "react-toastify";
- // Import Navbar
+// Import Navbar
 import heroImage from "../assets/image.png"; // adjust the path if needed
 
 const Homepage = () => {
@@ -12,7 +12,7 @@ const Homepage = () => {
   const [query, setQuery] = useState("");
   const imageRef = useRef(null); // Reference for the image
 
-  const handleStartSearching = () => {
+  const handleStartSearching = (path) => {
     console.log("Search query:", query);
     if (!user) {
       toast.info("Please log in to connect", { position: "top-right" });
@@ -20,7 +20,7 @@ const Homepage = () => {
       setTimeout(() => navigate("/signin"), 900);
       return;
     }
-    navigate("/researchhub");
+    navigate(path);
   };
 
   const handleExplore = () => {
@@ -53,9 +53,9 @@ const Homepage = () => {
   }, []);
 
   return (
-    <div className=" h-screen bg-gradient-to-b from-blue-100 to-blue-50 flex flex-col">
-     
-     
+    <div className="h-screen bg-gradient-to-b from-blue-100 to-blue-50 flex flex-col">
+
+
 
       {/* Hero Section */}
       <main className="flex-1 container mx-auto px-2 flex items-center">
@@ -81,7 +81,7 @@ const Homepage = () => {
                 className="flex-1 px-4 py-3 rounded-l-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
-                onClick={handleStartSearching}
+                onClick={() => handleStartSearching('/search')}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-r-xl"
               >
                 Search
@@ -91,7 +91,7 @@ const Homepage = () => {
             {/* CTA Buttons */}
             <div className="flex gap-6 mt-20">
               <button
-                onClick={handleStartSearching}
+                onClick={() => handleStartSearching('/search')}
                 className="px-8 py-3 rounded-xl shadow-md bg-blue-600 hover:bg-blue-700 text-white"
               >
                 Start Searching
