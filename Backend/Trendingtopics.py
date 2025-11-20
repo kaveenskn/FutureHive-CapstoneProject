@@ -1,32 +1,25 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-import re
+import os, json, asyncio, random
 from dotenv import load_dotenv
-import os
-import asyncio
-import random
-import json
-import re as _re
 
 load_dotenv()
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 from google import genai
 from google.genai import types
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 client = None
 if GEMINI_API_KEY:
     try:
         client = genai.Client(api_key=GEMINI_API_KEY)
     except Exception as e:
-        # Log the error and keep client as None so endpoints can return a
-        # helpful message instead of raising during import/runtime.
         print("Failed to initialize Gemini client:", e)
         client = None
 else:
-    print("Warning: GEMINI_API_KEY is not set. Gemini client disabled.")
+    print("Warning: GEMINI_API_KEY not set.")
 
-# --- FastAPI setup ---
 app = FastAPI()
 
 app.add_middleware(
@@ -38,164 +31,182 @@ app.add_middleware(
 )
 
 
-# Adjusted the `/topicspark` endpoint to ensure it sends data correctly
+# -------------------------------
+# 🧠 Helper: Always return an array
+# -------------------------------
+def force_topic_array(data):
+    """
+    Ensures output is always:
+    { "topics": [ ... ] }
+    """
+
+    # if backend returned a dict {"topics": [...]}
+    if isinstance(data, dict) and "topics" in data and isinstance(data["topics"], list):
+        return {"topics": data["topics"]}
+
+    # if backend returned a list directly
+    if isinstance(data, list):
+        return {"topics": data}
+
+    # if backend returned a string containing JSON array
+    if isinstance(data, str):
+        try:
+            parsed = json.loads(data)
+            return force_topic_array(parsed)
+        except:
+            pass
+
+    # unknown format → fallback
+    return {"topics": []}
+
+
+# -------------------------------
+# 📌 TOPICSPARK: TRENDING TOPICS
+# -------------------------------
 @app.get("/topicspark")
 async def get_trending_topics():
-    """
-    Generate trending research and mini project ideas with short descriptions.
-    """
-    prompt = """
-    You are an expert academic and innovation advisor.
-    Generate 10 trending topics for university research papers and capstone (mini) projects.
-    Include modern and relevant fields (AI, IoT, cybersecurity, data science, sustainability, etc.)
-    For each topic, give a short 2–3 sentence description of what it is about and why it’s trending.
 
-    IMPORTANT: Return ONLY valid JSON: an array of objects with the keys `title`, `description`, and `type`.
-    `type` must be exactly one of the strings: "research", "capstone", or "both".
-    Example output:
-    [
-        {"title": "Topic A", "description": "Two sentence description.", "type": "research"},
-        {"title": "Topic B", "description": "Two sentence description.", "type": "capstone"}
-    ]
-
-    Do not include any extra commentary or markdown — strictly the JSON array.
-    """
     if not client:
-        return {"error": "Gemini client not configured. Set GEMINI_API_KEY in environment."}
+        return {"topics": []}
+
+    prompt = """
+    Generate 10 trending research/capstone topics.
+    Return ONLY a JSON array you must follow EXACTLY:
+    [
+      {"title": "...", "description": "...", "type": "research"},
+      {"title": "...", "description": "...", "type": "capstone"}
+    ]
+    """
 
     max_retries = 3
-    base_delay = 1.0
+    base_delay = 1
+
     for attempt in range(max_retries):
         try:
-            contents = [types.Content(role="user", parts=[types.Part.from_text(text=prompt)])]
             response = client.models.generate_content(
                 model="gemini-2.5-pro",
-                contents=contents,
+                contents=[types.Content(role="user", parts=[types.Part.from_text(text=prompt)])],
             )
-            answer = getattr(response, "text", "(No text in response)").strip()
+            answer = (getattr(response, "text", "")).strip()
 
-            # Parse JSON directly
+            # 1. Direct JSON parse
             try:
-                topics = json.loads(answer)
-                if isinstance(topics, list):
-                    return {"topics": topics}
-            except Exception:
+                parsed = json.loads(answer)
+                return force_topic_array(parsed)
+            except:
                 pass
 
-            # Extract JSON substring
+            # 2. Extract JSON array
             try:
                 start = answer.index('[')
-                end = answer.rindex(']')
-                candidate = answer[start:end+1]
-                topics = json.loads(candidate)
-                if isinstance(topics, list):
-                    return {"topics": topics}
-            except Exception:
+                end = answer.rindex(']') + 1
+                arr = json.loads(answer[start:end])
+                return {"topics": arr}
+            except:
                 pass
 
-            # Fallback: return raw string
-            return {"topics": [{"title": "Generated topics", "description": answer}]}
+            # 3. Fallback
+            return {
+                "topics": [
+                    {"title": "Unstructured Response", "description": answer, "type": "research"}
+                ]
+            }
 
         except Exception as e:
-            estr = str(e)
             if attempt == max_retries - 1:
-                fallback = [
-                    {"title": "Edge AI for Environmental Sensing", "description": "Low-power edge models for real-time environmental monitoring and anomaly detection.", "type": "research"},
-                    {"title": "Secure IoT Firmware Update Framework", "description": "A capstone-style project building a secure OTA update flow for resource-constrained IoT devices.", "type": "capstone"},
-                    {"title": "Explainable ML for Healthcare Triage", "description": "Interpretable models that help triage patients and provide human-readable explanations for decisions.", "type": "research"}
-                ]
-                return {"topics": fallback}
-            if "overloaded" in estr.lower() or "503" in estr or "unavailable" in estr.lower():
+                # final fallback
+                return {
+                    "topics": [
+                        {
+                            "title": "Edge AI for Smart Cities",
+                            "description": "AI on edge devices for traffic, pollution and energy optimization.",
+                            "type": "research",
+                        },
+                        {
+                            "title": "Secure IoT Firmware Updater",
+                            "description": "Build a secure OTA updater for IoT boards.",
+                            "type": "capstone",
+                        },
+                    ]
+                }
+
+            if "overloaded" in str(e).lower() or "503" in str(e):
                 delay = base_delay * (2 ** attempt) + random.uniform(0, 0.5)
                 await asyncio.sleep(delay)
                 continue
-            return {"error": estr}
-        
-        
-        
-        
-  #Search endpoint      
-  
-        
+
+            return {"topics": []}
+
+
+# -------------------------------
+# 🔍 SEARCH TOPICS
+# -------------------------------
 @app.post("/topicspark/search")
 async def search_topicspark(request: Request):
-    data = await request.json()
-    query = data.get("query", "").strip()
+
+    body = await request.json()
+    query = body.get("query", "").strip()
 
     if not query:
-        return {"error": "Query text is required."}
+        return {"topics": []}
 
     prompt = f"""
-    You are an expert research advisor.
-    The user wants research and capstone project ideas related to: "{query}".
-    Generate 8–10 modern topics including AI, IoT, Data Science, etc.
-    For each topic, include:
-      - title (short, unique)
-      - description (2–3 sentences)
-      - type ("research", "capstone", or "both")
-    Return ONLY valid JSON like this:
+    Generate 10 topics related to: "{query}".
+    Return only this JSON format:
     {{
       "topics": [
-        {{
-          "title": "...",
-          "description": "...",
-          "type": "research"
-        }}
+        {{"title": "...", "description": "...", "type": "research"}}
       ]
     }}
     """
 
     if not client:
-        return {"error": "Gemini client not configured. Set GEMINI_API_KEY."}
+        return {"topics": []}
 
     max_retries = 3
-    base_delay = 1.0
+    base_delay = 1
 
     for attempt in range(max_retries):
         try:
-            contents = [types.Content(role="user", parts=[types.Part.from_text(text=prompt)])]
             response = client.models.generate_content(
                 model="gemini-2.5-pro",
-                contents=contents,
+                contents=[types.Content(role="user", parts=[types.Part.from_text(text=prompt)])],
             )
-            answer = getattr(response, "text", "(No text in response)").strip()
+            answer = (getattr(response, "text", "")).strip()
 
-            # Try parsing directly
+            # 1. Direct dict parse
             try:
-                data = json.loads(answer)
-                if isinstance(data, dict) and "topics" in data:
-                    return data
-                elif isinstance(data, list):
-                    return {"topics": data}
-            except Exception:
+                parsed = json.loads(answer)
+                return force_topic_array(parsed)
+            except:
                 pass
 
-            # Fallback: manually extract JSON part
+            # 2. Extract array only
             try:
-                start = answer.index('[')
-                end = answer.rindex(']')
-                candidate = answer[start:end+1]
-                topics = json.loads(candidate)
-                return {"topics": topics}
-            except Exception:
+                start = answer.index("[")
+                end = answer.rindex("]") + 1
+                arr = json.loads(answer[start:end])
+                return {"topics": arr}
+            except:
                 pass
 
-            return {"topics": [{"title": "Unstructured response", "description": answer, "type": "research"}]}
+            # 3. Worst case: fallback
+            return {
+                "topics": [
+                    {"title": "Unstructured Response", "description": answer, "type": "research"}
+                ]
+            }
 
         except Exception as e:
-            err = str(e)
             if attempt == max_retries - 1:
-                return {"error": f"Gemini failed after {max_retries} attempts: {err}"}
+                return {"topics": []}
 
-            if "overloaded" in err.lower() or "503" in err or "unavailable" in err.lower():
+            if "overloaded" in str(e).lower() or "503" in str(e):
                 delay = base_delay * (2 ** attempt) + random.uniform(0, 0.5)
-                print(f"Retrying search in {delay:.2f}s (attempt {attempt+1})")
                 await asyncio.sleep(delay)
                 continue
 
-            return {"error": err}
-        
-        
+            return {"topics": []}
 
 
 

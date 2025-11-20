@@ -87,7 +87,9 @@ const TopicSparkBody = () => {
         );
 
   const navigateToChatbot = (project) => {
-    navigate("/chat", { state: { paper: project } });
+
+    navigate("/chat", { state: { paper: project, source: "topicspark" } });
+
   };
 
   return (
