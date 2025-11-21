@@ -12,6 +12,8 @@ import Mentors from "./pages/Mentors.jsx";
 import ResearchHub from "./pages/ResearchHub.jsx";
 import Projects from "./pages/Projects.jsx";
 import ProjectDetails from "./pages/ProjectDetails.jsx";
+import MentorConnect from "./pages/MentorConnect.jsx";
+import MentorProfile from "./pages/MentorProfile";
 
 import TopicSpark from "./pages/TopicSpark.jsx";
 import PastResearch from "./pages/PastResearch.jsx";
@@ -35,6 +37,8 @@ function App() {
         <Route path="/topicspark" element={<TopicSpark />} />
         <Route path="/assistant" element={<ResearchAssistant />} />
         <Route path="/adminpanel" element={<ResearchAdminpanel />} />
+        <Route path="/mentor-connect" element={<MentorConnect />} />
+        <Route path="/mentor-profile/:id" element={<MentorProfile />} />
       </Routes>
       <ToastContainer closeOnClick />
     </>
