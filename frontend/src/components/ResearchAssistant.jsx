@@ -95,15 +95,15 @@ const ResearchAssistant = () => {
   const bookmarkedResults = results.filter((r) => bookmarks.includes(makeKey(r)));
 
   return (
-  <div className="w-full flex justify-center ">
-  <div className="w-full h-full max-w-6xl px-8 py-8">
-        <div className="flex justify-center w-full">
-           <main className="w-full text-center">
+    <div className="w-full flex flex-col items-center px-4 md:px-8 py-8"> {/* Adjusted for responsiveness */}
+      <div className="w-full max-w-6xl">
+        <div className="flex flex-col items-center">
+          <main className="w-full text-center">
             <header className="mb-8 text-center max-w-3xl mx-auto">
-              <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900">
+              <h1 className="text-3xl md:text-5xl font-extrabold text-slate-900">
                 Explore Past Researches & Project Ideas
               </h1>
-              <p className="mt-2 text-lg text-slate-600">
+              <p className="mt-2 text-base md:text-lg text-slate-600">
                 Browse previous research works and innovative project ideas. Use filters or search to find inspiration and details for your next academic or creative endeavor.
               </p>
             </header>
@@ -115,7 +115,7 @@ const ResearchAssistant = () => {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search research papers, topics, or keywords…"
-                  className="rounded-2xl focus:ring-2 focus:ring-sky-500 focus:border-transparent w-full px-6 py-4 text-lg transition-all border border-gray-300 shadow-sm outline-none"
+                  className="rounded-2xl focus:ring-2 focus:ring-sky-500 focus:border-transparent w-full px-6 py-4 text-sm md:text-lg transition-all border border-gray-300 shadow-sm outline-none"
                 />
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                   <button
@@ -147,12 +147,12 @@ const ResearchAssistant = () => {
                 <h3 className="mb-3 text-sm font-semibold tracking-wider text-gray-500 uppercase">
                   Year
                 </h3>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-3 justify-center md:justify-start">
                   {YEARS.map((year) => (
                     <button
                       key={year}
                       onClick={() => handleFilterChange("year", year)}
-                      className={`px-5 py-2.5 rounded-lg border transition-all ${
+                      className={`px-4 md:px-5 py-2.5 rounded-lg border transition-all ${
                         filters.year === year
                           ? "bg-blue-600 text-white border-blue-600 shadow-md"
                           : "bg-white text-gray-700 border-gray-300 hover:border-blue-600 hover:text-blue-600"
@@ -169,12 +169,12 @@ const ResearchAssistant = () => {
                 <h3 className="mb-3 text-sm font-semibold tracking-wider text-gray-500 uppercase text-left">
                   Project Type
                 </h3>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-3 justify-center md:justify-start">
                   {TYPES.map((type) => (
                     <button
                       key={type}
                       onClick={() => handleFilterChange("type", type)}
-                      className={`px-5 py-2.5 rounded-lg border transition-all ${
+                      className={`px-4 md:px-5 py-2.5 rounded-lg border transition-all ${
                         filters.type === type
                           ? "bg-blue-600 text-white border-blue-600 shadow-md"
                           : "bg-white text-gray-700 border-gray-300 hover:border-blue-600 hover:text-blue-600"
@@ -189,13 +189,13 @@ const ResearchAssistant = () => {
 
             {/* Results Section */}
             <section className="mt-12 mb-8 bg-white/90 border border-blue-100 rounded-2xl shadow-lg w-full px-2 md:px-6 py-8 text-left">
-              <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-blue-700">Results</h2>
+              <div className="mb-6 flex flex-col md:flex-row items-center justify-between">
+                <h2 className="text-xl md:text-2xl font-bold text-blue-700">Results</h2>
                 <span className="text-sm text-slate-500">{filteredResults.length} found</span>
               </div>
 
               {/* Bookmarks Toggle Button */}
-              <div className="mb-4 flex justify-end">
+              <div className="mb-4 flex justify-center md:justify-end">
                 <button
                   onClick={handleShowBookmarks}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
