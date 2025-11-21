@@ -14,6 +14,7 @@ const ResearchAssistant = () => {
   const [results, setResults] = useState([]);
   const [filters, setFilters] = useState({ year: "all", type: "all" });
   const [bookmarks, setBookmarks] = useState([]);
+  const [showBookmarks, setShowBookmarks] = useState(false);
 
   const mapTypeForBackend = (uiType) => {
     if (!uiType) return "research";
@@ -25,7 +26,7 @@ const ResearchAssistant = () => {
   useEffect(() => {
     const fetchDefault = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:5000/default");
+        const res = await fetch("http://127.0.0.1:5000/past/default");
         if (res.ok) {
           const data = await res.json();
           setResults(data.results || []);
@@ -40,7 +41,7 @@ const ResearchAssistant = () => {
   const handleSearch = async () => {
     if (!query.trim()) return;
     try {
-      const res = await fetch("http://127.0.0.1:5000/search", {
+      const res = await fetch("http://127.0.0.1:5000/past/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query, type: mapTypeForBackend(filters.type) }),
@@ -86,6 +87,12 @@ const ResearchAssistant = () => {
       setBookmarks((prev) => [key, ...prev]);
     }
   };
+
+  const handleShowBookmarks = () => {
+    setShowBookmarks((prev) => !prev);
+  };
+
+  const bookmarkedResults = results.filter((r) => bookmarks.includes(makeKey(r)));
 
   return (
   <div className="w-full flex justify-center ">
@@ -186,11 +193,22 @@ const ResearchAssistant = () => {
                 <h2 className="text-2xl font-bold text-blue-700">Results</h2>
                 <span className="text-sm text-slate-500">{filteredResults.length} found</span>
               </div>
+
+              {/* Bookmarks Toggle Button */}
+              <div className="mb-4 flex justify-end">
+                <button
+                  onClick={handleShowBookmarks}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  {showBookmarks ? "Show All" : "Bookmarks"}
+                </button>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {filteredResults.length === 0 ? (
+                {(showBookmarks ? bookmarkedResults : filteredResults).length === 0 ? (
                   <div className="col-span-full text-center text-slate-500 py-12 text-lg">No results found. Try adjusting your search or filters.</div>
                 ) : (
-                  filteredResults.map((result, idx) => (
+                  (showBookmarks ? bookmarkedResults : filteredResults).map((result, idx) => (
                     <article
                       key={idx}
                       className="bg-white rounded-2xl p-6 shadow hover:shadow-2xl transition transform hover:-translate-y-1 relative border border-slate-100"
@@ -230,8 +248,8 @@ const ResearchAssistant = () => {
                         </button>
                       </div>
                     </article>
-                  ))
-                )}
+                  )))
+                }
               </div>
             </section>
           </main>
