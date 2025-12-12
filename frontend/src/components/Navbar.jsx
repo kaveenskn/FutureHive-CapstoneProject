@@ -60,9 +60,9 @@ const Navbar = () => {
 
             <button
               className="px-4 py-2 text-gray-700 hover:text-blue-600 font-semibold"
-              onClick={() => handleProtectedNavigation("/recommendations")}
+              onClick={() => handleProtectedNavigation("/mentors")}
             >
-              Recommendations
+             Mentors
             </button>
 
             {!user ? (
@@ -148,11 +148,11 @@ const Navbar = () => {
               <button
                 className="px-4 py-2 text-gray-700 hover:text-blue-600 font-semibold"
                 onClick={() => {
-                  handleProtectedNavigation("/recommendations");
+                  handleProtectedNavigation("/mentors");
                   setIsMenuOpen(false);
                 }}
               >
-                Recommendations
+                Mentors
               </button>
 
               {!user ? (

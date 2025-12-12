@@ -9,6 +9,7 @@ Backend/.env
 .env
 .env.local
 .env.*.local
+/.env
 
 # Ignore Python cache and compiled files
 __pycache__/

@@ -76,7 +76,7 @@ def get_default_projects(collection_type="research",limit=10):
        else:
         collection_to_use=ResearchDocs
 
-        for doc in collection_to_use[:limit]:
+       for doc in collection_to_use[:limit]:
             default_projects.append({
             "title": doc.get("title", ""),
             "description": doc.get("abstract", ""),
@@ -84,7 +84,7 @@ def get_default_projects(collection_type="research",limit=10):
             "year": doc.get("year", "")
         })
 
-        return default_projects
+       return default_projects
 
 
 def search_projects(user_query, collection_type="research"):
