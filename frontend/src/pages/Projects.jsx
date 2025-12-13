@@ -222,42 +222,69 @@ export default function Projects() {
                                 {projects.map((p) => (
                                     <motion.article
                                         key={p.id}
-                                        whileHover={{ scale: 1.02 }}
-                                        className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300"
+                                        whileHover={{ y: -3 }}
+                                        transition={{ type: "spring", stiffness: 180, damping: 16 }}
+                                        className="bg-white rounded-2xl shadow-sm border border-gray-200 hover:shadow-lg transition-all"
                                     >
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">{p.type}</span>
-                                                    <span className="text-xs text-slate-400">{p.year}</span>
-                                                </div>
-                                                <h4 className="text-xl font-semibold text-slate-800">{p.title}</h4>
-                                                <p className="text-sm mb-3 text-slate-700">{p.description}</p>
-                                                <div className="grid grid-cols-2 gap-2 text-sm text-slate-600">
-                                                    <p><strong>Supervisor:</strong> {p.supervisorEmail || '-'}</p>
-                                                    <p><strong>Mentor:</strong> {p.mentorEmail || '-'}</p>
-                                                    <p><strong>Leader:</strong> {p.leaderEmail || '-'}</p>
-                                                    <p><strong>Team:</strong> {(p.team || []).join(', ') || '-'}</p>
-                                                </div>
+                                        {/* Header */}
+                                        <div className="flex items-center justify-between px-6 pt-5">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-xs font-bold px-3 py-1 rounded-full bg-blue-600 text-white">
+                                                    {p.type}
+                                                </span>
+                                                <span className="text-sm font-semibold text-gray-500">{p.year}</span>
                                             </div>
 
-                                            <div className="flex flex-col items-end gap-2">
-                                                <button
-                                                    onClick={() => navigate(`/projects/${p.id}`)}
-                                                    className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition"
-                                                >
-                                                    Open
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(p.id)}
-                                                    className="px-4 py-2 text-red-600 border border-red-600 rounded-md hover:bg-red-50 transition text-sm"
-                                                >
-                                                    Delete
-                                                </button>
+                                            <button
+                                                onClick={() => handleDelete(p.id)}
+                                                className="text-sm font-semibold text-red-600 hover:text-red-700 transition"
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+
+                                        {/* Body */}
+                                        <div className="px-6 py-4">
+                                            <h4 className="text-xl font-bold text-gray-900 mb-2">
+                                                {p.title}
+                                            </h4>
+
+                                            <p className="text-base font-medium text-gray-700 mb-4 leading-relaxed line-clamp-2">
+                                                {p.description}
+                                            </p>
+
+                                            <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-sm font-medium text-gray-800">
+                                                <p>
+                                                    <span className="font-bold">Supervisor:</span>{" "}
+                                                    {p.supervisorEmail || "-"}
+                                                </p>
+                                                <p>
+                                                    <span className="font-bold">Mentor:</span>{" "}
+                                                    {p.mentorEmail || "-"}
+                                                </p>
+                                                <p>
+                                                    <span className="font-bold">Leader:</span>{" "}
+                                                    {p.leaderEmail || "-"}
+                                                </p>
+                                                <p className="col-span-2">
+                                                    <span className="font-bold">Team:</span>{" "}
+                                                    {(p.team || []).join(", ") || "-"}
+                                                </p>
                                             </div>
+                                        </div>
+
+                                        {/* Footer */}
+                                        <div className="px-6 pb-5 pt-4 border-t border-gray-200 flex justify-end">
+                                            <button
+                                                onClick={() => navigate(`/projects/${p.id}`)}
+                                                className="px-6 py-2 text-sm font-bold rounded-lg bg-gradient-to-r from-blue-600 to-sky-500 text-white shadow hover:shadow-md transition"
+                                            >
+                                                Open Project →
+                                            </button>
                                         </div>
                                     </motion.article>
                                 ))}
+
                             </div>
                         </section>
                     </div>
