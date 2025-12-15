@@ -1,16 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import MentorCard from "../components/MentorCard";
 import FiltersPanel from "../components/FiltersPanel";
-import { FaBookmark, FaRegBookmark } from "react-icons/fa";
-
-const YEARS = ["all", "2024", "2023", "2022", "2021", "2020"];
-const TYPES = ["all", "Technical", "Management", "Creative"];
 
 export default function Mentors() {
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState({
-    year: "all",
-    type: "all",
     expertise: "",
     minExperience: 0,
     availability: "",
@@ -18,8 +12,7 @@ export default function Mentors() {
   });
   const [sampleMentors, setSampleMentors] = useState([]);
   const [selected, setSelected] = useState(null);
-  const [bookmarks, setBookmarks] = useState([]);
-  const [showBookmarks, setShowBookmarks] = useState(false);
+  const [showAllExpertise, setShowAllExpertise] = useState(false);
 
   useEffect(() => {
     const fetchDefault = async () => {
@@ -47,47 +40,34 @@ export default function Mentors() {
     [sampleMentors]
   );
 
-  const filteredResults = sampleMentors.filter((m) => {
-    const matchYear =
-      filters.year === "all" || String(m.year) === String(filters.year);
-    const matchType =
-      filters.type === "all" ||
-      (m.type
-        ? String(m.type).toLowerCase() === String(filters.type).toLowerCase()
-        : true);
-    const matchExpertise =
-      !filters.expertise || m.expertise.includes(filters.expertise);
-    const matchExperience =
-      !filters.minExperience || m.experience >= filters.minExperience;
-    const matchAvailability =
-      !filters.availability || m.availability === filters.availability;
-
-    return (
-      matchYear &&
-      matchType &&
-      matchExpertise &&
-      matchExperience &&
-      matchAvailability
-    );
-  });
-
-  const makeKey = (mentor) => encodeURIComponent(`${mentor.name}||${mentor.id}`);
-  const isBookmarked = (mentor) => bookmarks.includes(makeKey(mentor));
-
-  const toggleBookmark = (mentor) => {
-    const key = makeKey(mentor);
-    if (bookmarks.includes(key)) {
-      setBookmarks((prev) => prev.filter((k) => k !== key));
-    } else {
-      setBookmarks((prev) => [key, ...prev]);
+  const results = useMemo(() => {
+    let items = sampleMentors.slice();
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      items = items.filter((m) =>
+        (m.name + " " + (m.expertise || []).join(" ") + " " + m.bio)
+          .toLowerCase()
+          .includes(q)
+      );
     }
-  };
+    if (filters.expertise) {
+      items = items.filter((m) => m.expertise.includes(filters.expertise));
+    }
+    if (filters.minExperience) {
+      items = items.filter((m) => m.experience >= filters.minExperience);
+    }
+    if (filters.availability) {
+      items = items.filter((m) => m.availability === filters.availability);
+    }
+    if (filters.sort === "experience") {
+      items.sort((a, b) => b.experience - a.experience);
+    }
+    return items;
+  }, [query, filters, sampleMentors]);
 
-  const handleShowBookmarks = () => {
-    setShowBookmarks((prev) => !prev);
-  };
-
-  const bookmarkedResults = sampleMentors.filter((m) => bookmarks.includes(makeKey(m)));
+  function handleViewMore(m) {
+    setSelected(m);
+  }
 
   return (
     <div className="w-full flex flex-col items-center px-4 md:px-8 py-8">
@@ -99,7 +79,7 @@ export default function Mentors() {
                 Find a Mentor
               </h1>
               <p className="mt-2 text-base md:text-lg text-slate-600">
-                Search mentors by expertise, skill, or topic. Use filters or search to find the perfect mentor for your needs.
+                Search mentors by expertise, skill, or topic. Connect directly via email or LinkedIn.
               </p>
             </header>
 
@@ -136,45 +116,53 @@ export default function Mentors() {
 
             {/* Filter Buttons */}
             <div className="max-w-3xl mx-auto mb-8">
-              {/* Year Filter */}
+              {/* Expertise Filter */}
               <div className="mb-6 text-left">
                 <h3 className="mb-3 text-sm font-semibold tracking-wider text-gray-500 uppercase">
-                  Year
+                  Expertise
                 </h3>
                 <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-                  {YEARS.map((year) => (
+                  {(showAllExpertise ? expertiseOptions : expertiseOptions.slice(0, 5)).map((expertise) => (
                     <button
-                      key={year}
-                      onClick={() => setFilters((f) => ({ ...f, year }))}
+                      key={expertise}
+                      onClick={() => setFilters((f) => ({ ...f, expertise }))}
                       className={`px-4 md:px-5 py-2.5 rounded-lg border transition-all ${
-                        filters.year === year
+                        filters.expertise === expertise
                           ? "bg-blue-600 text-white border-blue-600 shadow-md"
                           : "bg-white text-gray-700 border-gray-300 hover:border-blue-600 hover:text-blue-600"
                       }`}
                     >
-                      {year === "all" ? "All Years" : year}
+                      {expertise}
                     </button>
                   ))}
                 </div>
+                {expertiseOptions.length > 5 && (
+                  <button
+                    onClick={() => setShowAllExpertise((prev) => !prev)}
+                    className="mt-3 text-sm text-blue-600 hover:underline"
+                  >
+                    {showAllExpertise ? "Show Less" : "Show All"}
+                  </button>
+                )}
               </div>
 
-              {/* Type Filter */}
+              {/* Availability Filter */}
               <div>
                 <h3 className="mb-3 text-sm font-semibold tracking-wider text-gray-500 uppercase text-left">
-                  Mentor Type
+                  Availability
                 </h3>
                 <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-                  {TYPES.map((type) => (
+                  {["Available", "Busy"].map((availability) => (
                     <button
-                      key={type}
-                      onClick={() => setFilters((f) => ({ ...f, type }))}
+                      key={availability}
+                      onClick={() => setFilters((f) => ({ ...f, availability }))}
                       className={`px-4 md:px-5 py-2.5 rounded-lg border transition-all ${
-                        filters.type === type
+                        filters.availability === availability
                           ? "bg-blue-600 text-white border-blue-600 shadow-md"
                           : "bg-white text-gray-700 border-gray-300 hover:border-blue-600 hover:text-blue-600"
                       }`}
                     >
-                      {type === "all" ? "All Types" : type}
+                      {availability}
                     </button>
                   ))}
                 </div>
@@ -185,39 +173,18 @@ export default function Mentors() {
             <section className="mt-12 mb-8 bg-white/90 border border-blue-100 rounded-2xl shadow-lg w-full px-2 md:px-6 py-8 text-left">
               <div className="mb-6 flex flex-col md:flex-row items-center justify-between">
                 <h2 className="text-xl md:text-2xl font-bold text-blue-700">Results</h2>
-                <span className="text-sm text-slate-500">{filteredResults.length} found</span>
-              </div>
-
-              {/* Bookmarks Toggle Button */}
-              <div className="mb-4 flex justify-center md:justify-end">
-                <button
-                  onClick={handleShowBookmarks}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  {showBookmarks ? "Show All" : "Bookmarks"}
-                </button>
+                <span className="text-sm text-slate-500">{results.length} found</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {(showBookmarks ? bookmarkedResults : filteredResults).length === 0 ? (
+                {results.length === 0 ? (
                   <div className="col-span-full text-center text-slate-500 py-12 text-lg">No results found. Try adjusting your search or filters.</div>
                 ) : (
-                  (showBookmarks ? bookmarkedResults : filteredResults).map((mentor, idx) => (
+                  results.map((mentor, idx) => (
                     <article
                       key={idx}
                       className="bg-white rounded-2xl p-6 shadow hover:shadow-2xl transition transform hover:-translate-y-1 relative border border-slate-100"
                     >
-                      <button
-                        onClick={() => toggleBookmark(mentor)}
-                        className="absolute right-4 top-4 text-slate-400 hover:text-sky-500"
-                      >
-                        {isBookmarked(mentor) ? (
-                          <FaBookmark className="text-sky-500" />
-                        ) : (
-                          <FaRegBookmark />
-                        )}
-                      </button>
-
                       <h4 className="text-lg font-semibold mb-1">{mentor.name}</h4>
                       <div className="text-sm text-slate-600 mb-3">
                         {mentor.expertise.join(", ")}
@@ -228,15 +195,7 @@ export default function Mentors() {
 
                       <div className="flex items-center justify-between text-sm text-slate-500">
                         <div>{mentor.availability || "Unknown Availability"}</div>
-                        <div>{mentor.year || "N/A"}</div>
-                      </div>
-
-                      <div className="mt-4 flex justify-end">
-                        <button
-                          className="px-5 py-2 rounded-lg bg-gradient-to-r from-sky-500 to-sky-400 text-white font-medium shadow hover:scale-[1.01] transition"
-                        >
-                          View Profile
-                        </button>
+                        <div>{mentor.experience} years</div>
                       </div>
                     </article>
                   ))
