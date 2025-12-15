@@ -76,8 +76,8 @@ const Chatbot = () => {
 
   return (
     <div className="h-screen w-full flex flex-col bg-gray-50">
-      <div className="flex-1 flex flex-col items-center justify-center px-4 md:px-6 py-6">
-        <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg p-4 md:p-6 flex flex-col h-full">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 md:px-6 py-6 md:py-8">
+        <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg p-4 md:p-6 flex flex-col h-full md:mb-6">
           <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-3 md:mb-4">Chat with AI</h2>
           <h3 className="text-lg md:text-xl font-semibold text-slate-700 mb-4 md:mb-6">{paper.title}</h3>
 
