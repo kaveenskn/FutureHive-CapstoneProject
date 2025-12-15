@@ -5,7 +5,7 @@ import FiltersPanel from "../components/FiltersPanel";
 export default function Mentors() {
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState({
-    expertise: "",
+    expertise: "all",
     minExperience: 0,
     availability: "",
     sort: "relevance",
@@ -36,7 +36,7 @@ export default function Mentors() {
   }, []);
 
   const expertiseOptions = useMemo(
-    () => Array.from(new Set(sampleMentors.flatMap((m) => m.expertise || []))),
+    () => ["all", ...Array.from(new Set(sampleMentors.flatMap((m) => m.expertise || [])))],
     [sampleMentors]
   );
 
@@ -50,7 +50,7 @@ export default function Mentors() {
           .includes(q)
       );
     }
-    if (filters.expertise) {
+    if (filters.expertise && filters.expertise !== "all") {
       items = items.filter((m) => m.expertise.includes(filters.expertise));
     }
     if (filters.minExperience) {
@@ -132,7 +132,7 @@ export default function Mentors() {
                           : "bg-white text-gray-700 border-gray-300 hover:border-blue-600 hover:text-blue-600"
                       }`}
                     >
-                      {expertise}
+                      {expertise === "all" ? "All Expertise" : expertise}
                     </button>
                   ))}
                 </div>
