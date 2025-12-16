@@ -165,13 +165,13 @@ export default function Projects() {
                         {cards.map((card, index) => {
                             const isLast = index === cards.length - 1;
                             const containerClass = isLast
-                                ? "p-8 rounded-2xl shadow-lg text-center bg-gradient-to-r from-blue-600 to-sky-500 text-white"
-                                : "bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl text-center border border-gray-100";
+                                ? "cursor-pointer bg-gradient-to-r from-blue-600 to-sky-400 p-6 rounded-2xl shadow-xl hover:shadow-2xl transition text-white flex flex-col justify-between"
+                                : "cursor-pointer bg-gradient-to-r from-white to-blue-50 p-6 rounded-2xl shadow-xl hover:shadow-2xl transition flex flex-col justify-between";
                             const icon = isLast
                                 ? React.cloneElement(card.icon, { className: "w-10 h-10 text-white" })
                                 : card.icon;
-                            const titleClass = isLast ? "text-xl font-semibold text-white mb-3" : "text-xl font-semibold text-gray-800 mb-3";
-                            const descClass = isLast ? "text-white text-sm" : "text-gray-600 text-sm";
+                            const titleClass = isLast ? "text-2xl font-bold mb-2 text-white" : "text-2xl font-bold mb-2 text-blue-700";
+                            const descClass = isLast ? "text-white/90" : "text-gray-600";
                             return (
                                 <motion.div
                                     key={index}
@@ -179,9 +179,16 @@ export default function Projects() {
                                     transition={{ type: "spring", stiffness: 200, damping: 10 }}
                                     className={containerClass}
                                 >
-                                    <div className="flex justify-center mb-4">{icon}</div>
-                                    <h3 className={titleClass}>{card.title}</h3>
-                                    <p className={descClass}>{card.description}</p>
+                                    <div>
+                                        <div className="flex justify-center mb-4">{icon}</div>
+                                        <h3 className={titleClass}>{card.title}</h3>
+                                        <p className={descClass}>{card.description}</p>
+                                    </div>
+                                    {isLast && (
+                                        <div className="mt-4 self-end">
+                                            <span className="inline-block px-3 py-2 bg-white/20 text-white rounded-lg font-semibold shadow">Explore Topics</span>
+                                        </div>
+                                    )}
                                 </motion.div>
                             );
                         })}
