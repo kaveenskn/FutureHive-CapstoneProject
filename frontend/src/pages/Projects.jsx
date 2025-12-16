@@ -228,17 +228,17 @@ export default function Projects() {
                                     <motion.article
                                         key={p.id}
                                         whileHover={{ scale: 1.03 }}
-                                        className="bg-gray-50 border border-gray-200 rounded-2xl p-6 shadow-md hover:shadow-lg transition-all duration-300"
+                                        className=" bg-gradient-to-r from-blue-600 to-sky-500 text-white border border-gray-200 rounded-2xl p-6 shadow-md hover:shadow-lg transition-all duration-300"
                                     >
                                         <div className="flex items-start justify-between">
-                                            <div className="flex-1">
+                                            <div className="flex-1 ">
                                                 <div className="flex items-center gap-2 mb-3">
                                                     <span className="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full font-medium">{p.type}</span>
-                                                    <span className="text-xs text-gray-400 font-medium">{p.year}</span>
+                                                    <span className="text-xs text-white  font-medium">{p.year}</span>
                                                 </div>
-                                                <h4 className="text-2xl font-bold text-gray-800 mb-3 text-center">{p.title}</h4>
-                                                <p className="text-sm mb-4 text-gray-700 leading-relaxed bg-gray-100 p-3 rounded-md">{p.description}</p>
-                                                <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                                                <h4 className="text-2xl font-bold text-white  mb-3 text-center">{p.title}</h4>
+                                                <p className="text-sm mb-4 text-black  leading-relaxed bg-gray-100 p-3 rounded-md">{p.description}</p>
+                                                <div className="grid grid-cols-2 gap-4 text-sm text-white ">
                                                     <p><strong>Supervisor:</strong> {p.supervisorEmail || '-'}</p>
                                                     <p><strong>Mentor:</strong> {p.mentorEmail || '-'}</p>
                                                     <p><strong>Leader:</strong> {p.leaderEmail || '-'}</p>
