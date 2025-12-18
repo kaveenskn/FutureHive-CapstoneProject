@@ -51,8 +51,12 @@ const Chatbot = () => {
       body: JSON.stringify(payload),
     });
 
-    const data = await response.json();
-    const botMsg = { role: "bot", text: data.answer || "No answer." };
+    const data = await response.json().catch(() => ({}));
+    const text =
+      data?.answer ||
+      data?.error ||
+      (!response.ok ? `Request failed (${response.status})` : "No answer.");
+    const botMsg = { role: "bot", text };
     setMessages((m) => [...m, botMsg]);
   } catch (err) {
     setMessages((m) => [...m, { role: "bot", text: "Error contacting server." }]);

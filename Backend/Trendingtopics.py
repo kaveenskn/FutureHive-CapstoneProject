@@ -9,6 +9,7 @@ from google import genai
 from google.genai import types
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 
 client = None
 if GEMINI_API_KEY:
@@ -84,7 +85,7 @@ async def get_trending_topics():
     for attempt in range(max_retries):
         try:
             response = client.models.generate_content(
-                model="gemini-2.5-pro",
+                model=GEMINI_MODEL,
                 contents=[types.Content(role="user", parts=[types.Part.from_text(text=prompt)])],
             )
             answer = (getattr(response, "text", "")).strip()
@@ -169,7 +170,7 @@ async def search_topicspark(request: Request):
     for attempt in range(max_retries):
         try:
             response = client.models.generate_content(
-                model="gemini-2.5-pro",
+                model=GEMINI_MODEL,
                 contents=[types.Content(role="user", parts=[types.Part.from_text(text=prompt)])],
             )
             answer = (getattr(response, "text", "")).strip()
