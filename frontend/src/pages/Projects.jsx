@@ -217,8 +217,6 @@ export default function Projects() {
                                 <h3 className="font-semibold text-2xl text-center text-blue-700 w-full">My Projects</h3>
                             </div>
 
-                            
-
                             <div className="space-y-6">
                                 {projects.length === 0 && (
                                     <div className="bg-gray-50 p-6 rounded-xl shadow-md text-gray-600 text-center border border-gray-200">
@@ -257,7 +255,7 @@ export default function Projects() {
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(p.id)}
-                                                    className="px-4 py-2 text-red-600 border border-red-600 rounded-lg hover:bg-red-50 transition text-sm"
+                                                    className="px-4 py-2 text-white border border-red-600 rounded-lg bg-red-600 hover:bg-red-50 transition text-sm"
                                                 >
                                                     Delete
                                                 </button>
