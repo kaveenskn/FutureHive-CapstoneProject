@@ -5,14 +5,18 @@ import FiltersPanel from "../components/FiltersPanel";
 export default function Mentors() {
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState({
+
     expertise: "all",
+
     minExperience: 0,
     availability: "",
     sort: "relevance",
   });
   const [sampleMentors, setSampleMentors] = useState([]);
   const [selected, setSelected] = useState(null);
+
   const [showAllExpertise, setShowAllExpertise] = useState(false);
+
 
   useEffect(() => {
     const fetchDefault = async () => {
@@ -36,7 +40,9 @@ export default function Mentors() {
   }, []);
 
   const expertiseOptions = useMemo(
+
     () => ["all", ...Array.from(new Set(sampleMentors.flatMap((m) => m.expertise || [])))],
+
     [sampleMentors]
   );
 
@@ -50,7 +56,9 @@ export default function Mentors() {
           .includes(q)
       );
     }
+
     if (filters.expertise && filters.expertise !== "all") {
+
       items = items.filter((m) => m.expertise.includes(filters.expertise));
     }
     if (filters.minExperience) {
@@ -70,6 +78,7 @@ export default function Mentors() {
   }
 
   return (
+
     <div className="w-full flex flex-col items-center px-4 md:px-8 py-8">
       <div className="w-full max-w-6xl">
         <div className="flex flex-col items-center">
@@ -167,6 +176,7 @@ export default function Mentors() {
                   ))}
                 </div>
               </div>
+
             </div>
 
             {/* Results Section */}
@@ -204,6 +214,8 @@ export default function Mentors() {
             </section>
           </main>
         </div>
+
+
       </div>
     </div>
   );

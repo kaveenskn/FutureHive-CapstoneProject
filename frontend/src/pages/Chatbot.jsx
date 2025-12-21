@@ -55,7 +55,9 @@ const Chatbot = () => {
       setLoading(false);
       setQuestion("");
     }
+
   };
+
 
   if (!paper) {
     return (
