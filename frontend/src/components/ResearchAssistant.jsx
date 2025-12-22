@@ -16,6 +16,9 @@ const ResearchAssistant = () => {
   const [bookmarks, setBookmarks] = useState([]);
   const [showBookmarks, setShowBookmarks] = useState(false);
 
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+
   const mapTypeForBackend = (uiType) => {
     if (!uiType) return "research";
     const t = String(uiType).toLowerCase();
@@ -93,6 +96,18 @@ const ResearchAssistant = () => {
   };
 
   const bookmarkedResults = results.filter((r) => bookmarks.includes(makeKey(r)));
+
+  const activeResults = showBookmarks ? bookmarkedResults : filteredResults;
+
+  useEffect(() => {
+    setPage(1);
+  }, [query, filters, results, showBookmarks]);
+
+  const totalPages = Math.max(1, Math.ceil(activeResults.length / pageSize));
+  const paginatedResults = activeResults.slice(
+    (page - 1) * pageSize,
+    (page - 1) * pageSize + pageSize
+  );
 
   return (
     <div className="w-full flex flex-col items-center px-4 md:px-8 py-8"> {/* Adjusted for responsiveness */}
@@ -191,7 +206,7 @@ const ResearchAssistant = () => {
             <section className="mt-12 mb-8 bg-white/90 border border-blue-100 rounded-2xl shadow-lg w-full px-2 md:px-6 py-8 text-left">
               <div className="mb-6 flex flex-col md:flex-row items-center justify-between">
                 <h2 className="text-xl md:text-2xl font-bold text-blue-700">Results</h2>
-                <span className="text-sm text-slate-500">{filteredResults.length} found</span>
+                <span className="text-sm text-slate-500">{activeResults.length} found</span>
               </div>
 
               {/* Bookmarks Toggle Button */}
@@ -205,10 +220,10 @@ const ResearchAssistant = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {(showBookmarks ? bookmarkedResults : filteredResults).length === 0 ? (
+                {paginatedResults.length === 0 ? (
                   <div className="col-span-full text-center text-slate-500 py-12 text-lg">No results found. Try adjusting your search or filters.</div>
                 ) : (
-                  (showBookmarks ? bookmarkedResults : filteredResults).map((result, idx) => (
+                  paginatedResults.map((result, idx) => (
                     <article
                       key={idx}
                       className="bg-white rounded-2xl p-6 shadow hover:shadow-2xl transition-transform duration-300 ease-out [transform:perspective(1000px)] hover:[transform:perspective(1000px)_translateY(-6px)_rotateX(2deg)_rotateY(-2deg)] relative border border-gray-200"
@@ -251,6 +266,33 @@ const ResearchAssistant = () => {
                   )))
                 }
               </div>
+
+              {activeResults.length > 0 && totalPages > 1 && (
+                <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                    className="px-4 py-2 rounded-lg border border-blue-200 text-blue-700 bg-white hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+
+                  <div className="text-sm text-slate-600">
+                    Page <span className="font-semibold text-blue-700">{page}</span> of{" "}
+                    <span className="font-semibold text-blue-700">{totalPages}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                    className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </section>
           </main>
         </div>
