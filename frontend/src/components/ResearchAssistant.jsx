@@ -211,7 +211,7 @@ const ResearchAssistant = () => {
                   (showBookmarks ? bookmarkedResults : filteredResults).map((result, idx) => (
                     <article
                       key={idx}
-                      className="bg-white rounded-2xl p-6 shadow hover:shadow-2xl transition transform hover:-translate-y-1 relative border border-slate-100"
+                      className="bg-white rounded-2xl p-6 shadow hover:shadow-2xl transition-transform duration-300 ease-out [transform:perspective(1000px)] hover:[transform:perspective(1000px)_translateY(-6px)_rotateX(2deg)_rotateY(-2deg)] relative border border-gray-200"
                     >
                       <button
                         onClick={() => toggleBookmark(result)}

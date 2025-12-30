@@ -165,13 +165,13 @@ export default function Projects() {
                         {cards.map((card, index) => {
                             const isLast = index === cards.length - 1;
                             const containerClass = isLast
-                                ? "p-8 rounded-2xl shadow-lg text-center bg-gradient-to-r from-blue-600 to-sky-500 text-white"
-                                : "bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl text-center border border-gray-100";
+                                ? "cursor-pointer bg-gradient-to-r from-blue-600 to-sky-400 p-6 rounded-2xl shadow-xl hover:shadow-2xl transition text-white flex flex-col justify-between"
+                                : "cursor-pointer bg-gradient-to-r from-white to-blue-50 p-6 rounded-2xl shadow-xl hover:shadow-2xl transition flex flex-col justify-between";
                             const icon = isLast
                                 ? React.cloneElement(card.icon, { className: "w-10 h-10 text-white" })
                                 : card.icon;
-                            const titleClass = isLast ? "text-xl font-semibold text-white mb-3" : "text-xl font-semibold text-gray-800 mb-3";
-                            const descClass = isLast ? "text-white text-sm" : "text-gray-600 text-sm";
+                            const titleClass = isLast ? "text-2xl font-bold mb-2 text-white" : "text-2xl font-bold mb-2 text-blue-700";
+                            const descClass = isLast ? "text-white/90" : "text-gray-600";
                             return (
                                 <motion.div
                                     key={index}
@@ -179,9 +179,16 @@ export default function Projects() {
                                     transition={{ type: "spring", stiffness: 200, damping: 10 }}
                                     className={containerClass}
                                 >
-                                    <div className="flex justify-center mb-4">{icon}</div>
-                                    <h3 className={titleClass}>{card.title}</h3>
-                                    <p className={descClass}>{card.description}</p>
+                                    <div>
+                                        <div className="flex justify-center mb-4">{icon}</div>
+                                        <h3 className={titleClass}>{card.title}</h3>
+                                        <p className={descClass}>{card.description}</p>
+                                    </div>
+                                    {isLast && (
+                                        <div className="mt-4 self-end">
+                                            <span className="inline-block px-3 py-2 bg-white/20 text-white rounded-lg font-semibold shadow">Explore Topics</span>
+                                        </div>
+                                    )}
                                 </motion.div>
                             );
                         })}
@@ -191,12 +198,12 @@ export default function Projects() {
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mt-20">
                         {/* Add New Project */}
                         <div className="lg:col-span-1">
-                            <div className="bg-white rounded-xl p-5 shadow-sm flex flex-col justify-between border border-gray-100 hover:shadow-md transition h-[200px] w-full">
-                                <h1 className="text-lg font-semibold">Add Your Projects</h1>
+                            <div className="bg-white rounded-xl p-5 shadow-md flex flex-col justify-between border border-gray-200 hover:shadow-lg transition h-[240px] w-full">
+                                <h1 className="text-lg font-semibold text-center text-gray-800">Add Your Projects</h1>
                                 <div className="mt-4">
                                     <button
                                         onClick={() => setIsOpen(true)}
-                                        className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-sky-400 text-white rounded-md shadow hover:shadow-lg transition-all duration-300"
+                                        className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-sky-500 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
                                     >
                                         + Add New Project
                                     </button>
@@ -204,86 +211,59 @@ export default function Projects() {
                             </div>
                         </div>
 
-
                         {/* My Projects */}
                         <section className="lg:col-span-3">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="font-semibold text-lg text-blue-700">My Projects</h3>
-                                <div className="text-sm text-slate-500">{projects.length} Active Project{projects.length !== 1 ? 's' : ''}</div>
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="font-semibold text-2xl text-center text-blue-700 w-full">My Projects</h3>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-6">
                                 {projects.length === 0 && (
-                                    <div className="bg-white p-6 rounded-xl shadow-sm text-slate-600 text-center border border-gray-100">
+                                    <div className="bg-gray-50 p-6 rounded-xl shadow-md text-gray-600 text-center border border-gray-200">
                                         No projects yet — create or join one using your registered email.
                                     </div>
                                 )}
 
-                               {projects.map((p) => (
-  <motion.article
-    key={p.id}
-    whileHover={{ y: -3 }}
-    transition={{ type: "spring", stiffness: 180, damping: 16 }}
-    className="bg-white rounded-2xl shadow-sm border border-gray-200 hover:shadow-lg transition-all"
-  >
-    {/* Header */}
-    <div className="flex items-center justify-between px-6 pt-5">
-      <div className="flex items-center gap-3">
-        <span className="text-xs font-bold px-3 py-1 rounded-full bg-blue-600 text-white">
-          {p.type}
-        </span>
-        <span className="text-sm font-semibold text-gray-500">{p.year}</span>
-      </div>
 
-      <button
-        onClick={() => handleDelete(p.id)}
-        className="text-sm font-semibold text-red-600 hover:text-red-700 transition"
-      >
-        Delete
-      </button>
-    </div>
+                                {projects.map((p) => (
+                                    <motion.article
+                                        key={p.id}
+                                        whileHover={{ scale: 1.03 }}
+                                        className=" bg-gradient-to-r from-blue-600 to-sky-500 text-white border border-gray-200 rounded-2xl p-6 shadow-md hover:shadow-lg transition-all duration-300"
+                                    >
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex-1 ">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <span className="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full font-medium">{p.type}</span>
+                                                    <span className="text-xs text-white  font-medium">{p.year}</span>
+                                                </div>
+                                                <h4 className="text-2xl font-bold text-white  mb-3 text-center">{p.title}</h4>
+                                                <p className="text-sm mb-4 text-black  leading-relaxed bg-gray-100 p-3 rounded-md">{p.description}</p>
+                                                <div className="grid grid-cols-2 gap-4 text-sm text-white ">
+                                                    <p><strong>Supervisor:</strong> {p.supervisorEmail || '-'}</p>
+                                                    <p><strong>Mentor:</strong> {p.mentorEmail || '-'}</p>
+                                                    <p><strong>Leader:</strong> {p.leaderEmail || '-'}</p>
+                                                    <p><strong>Team:</strong> {(p.team || []).join(', ') || '-'}</p>
+                                                </div>
+                                            </div>
 
-    {/* Body */}
-    <div className="px-6 py-4">
-      <h4 className="text-xl font-bold text-gray-900 mb-2">
-        {p.title}
-      </h4>
-
-      <p className="text-base font-medium text-gray-700 mb-4 leading-relaxed line-clamp-2">
-        {p.description}
-      </p>
-
-      <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-sm font-medium text-gray-800">
-        <p>
-          <span className="font-bold">Supervisor:</span>{" "}
-          {p.supervisorEmail || "-"}
-        </p>
-        <p>
-          <span className="font-bold">Mentor:</span>{" "}
-          {p.mentorEmail || "-"}
-        </p>
-        <p>
-          <span className="font-bold">Leader:</span>{" "}
-          {p.leaderEmail || "-"}
-        </p>
-        <p className="col-span-2">
-          <span className="font-bold">Team:</span>{" "}
-          {(p.team || []).join(", ") || "-"}
-        </p>
-      </div>
-    </div>
-
-    {/* Footer */}
-    <div className="px-6 pb-5 pt-4 border-t border-gray-200 flex justify-end">
-      <button
-        onClick={() => navigate(`/projects/${p.id}`)}
-        className="px-6 py-2 text-sm font-bold rounded-lg bg-gradient-to-r from-blue-600 to-sky-500 text-white shadow hover:shadow-md transition"
-      >
-        Open Project →
-      </button>
-    </div>
-  </motion.article>
-))}
+                                            <div className="flex flex-col items-end gap-3">
+                                                <button
+                                                    onClick={() => navigate(`/projects/${p.id}`)}
+                                                    className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+                                                >
+                                                    Open
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(p.id)}
+                                                    className="px-4 py-2 text-white border border-red-600 rounded-lg bg-red-600 hover:bg-red-50 transition text-sm"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </motion.article>
+                                ))}
 
                             </div>
                         </section>
