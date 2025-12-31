@@ -224,6 +224,7 @@ export default function Projects() {
                                     </div>
                                 )}
 
+
                                 {projects.map((p) => (
                                     <motion.article
                                         key={p.id}
@@ -263,6 +264,7 @@ export default function Projects() {
                                         </div>
                                     </motion.article>
                                 ))}
+
                             </div>
                         </section>
                     </div>
