@@ -78,12 +78,12 @@ const Chatbot = () => {
 
   return (
     <div className="h-screen w-full flex flex-col bg-gray-50">
-      <div className="flex-1 flex flex-col items-center justify-center px-4 md:px-6 py-6 md:py-8">
-        <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg border border-blue-100 border-t-4 border-t-blue-600 border-b-4 border-b-blue-600 p-4 md:p-6 flex flex-col h-full md:mb-6">
+      <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-4 md:px-6 py-6 md:py-8">
+        <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg p-4 md:p-6 flex flex-col h-full min-h-0 md:mb-6 overflow-hidden">
           <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-3 md:mb-4">Chat with AI</h2>
           <h3 className="text-lg md:text-xl font-semibold text-slate-700 mb-4 md:mb-6">{paper.title}</h3>
 
-          <div className="flex-1 mb-4 md:mb-6 bg-gray-100 border border-blue-100 border-t-2 border-t-blue-200 border-b-2 border-b-blue-200 p-3 md:p-4 rounded-lg shadow-inner overflow-y-auto">
+          <div className="flex-1 min-h-0 mb-4 md:mb-6 bg-gray-100 p-3 md:p-4 rounded-lg shadow-inner overflow-y-auto">
             {messages.length === 0 && (
               <p className="text-gray-500 text-center">Ask anything about this paper.</p>
             )}
