@@ -50,12 +50,17 @@ def _pick_default_model(installed: list[str]) -> str:
         "qwen2.5:0.5b-instruct",
         "llama3.2:1b-instruct",
         "phi3:mini",
+        # Larger models last (may not fit on low-RAM machines)
+        "llama3",
+        "llama3:latest",
     ]
     installed_set = set(installed)
     for m in preferred:
         if m in installed_set:
             return m
-    return installed[0] if installed else "gemma3:1b"
+    # If Ollama is temporarily unreachable at import time, installed may be empty.
+    # Default to a small model name that commonly fits on low-RAM machines.
+    return installed[0] if installed else "llama3.2:1b-instruct"
 
 
 _INSTALLED_MODELS = _list_installed_ollama_models()
@@ -81,6 +86,13 @@ def _humanize_ollama_error(err: Exception) -> str:
         return f"Ollama model '{OLLAMA_MODEL}' not found. Run: ollama pull {OLLAMA_MODEL}.{installed_hint}"
     if "timeout" in low:
         return "Ollama request timed out. Try a smaller prompt/model or increase OLLAMA_TIMEOUT_S."
+
+    if "requires more system memory" in low or ("system memory" in low and "available" in low):
+        return (
+            "The selected Ollama model is too large for your available RAM. "
+            "Pull and use a smaller model (e.g. 'llama3.2:1b-instruct' or 'qwen2.5:0.5b-instruct'), "
+            "then set OLLAMA_MODEL in Backend/.env."
+        )
 
     return msg
 

@@ -53,12 +53,16 @@ def _pick_default_model(installed: list[str]) -> str:
         "qwen2.5:0.5b-instruct",
         "llama3.2:1b-instruct",
         "phi3:mini",
+        # Larger models last (may not fit on low-RAM machines)
+        "llama3",
+        "llama3:latest",
     ]
     installed_set = set(installed)
     for m in preferred:
         if m in installed_set:
             return m
-    return installed[0] if installed else "gemma3:1b"
+    # If Ollama is temporarily unreachable at import time, installed may be empty.
+    return installed[0] if installed else "llama3.2:1b-instruct"
 
 
 _INSTALLED_MODELS = _list_installed_ollama_models()
@@ -86,6 +90,13 @@ def _humanize_ollama_error(err: Exception) -> str:
 
     if "timeout" in low:
         return "Ollama request timed out. Try a smaller prompt/model or increase OLLAMA_TIMEOUT_S."
+
+    if "requires more system memory" in low or ("system memory" in low and "available" in low):
+        return (
+            "The selected Ollama model is too large for your available RAM. "
+            "Pull and use a smaller model (e.g. 'llama3.2:1b-instruct' or 'qwen2.5:0.5b-instruct'), "
+            "then set OLLAMA_MODEL in Backend/.env."
+        )
 
     return msg
 
@@ -131,17 +142,45 @@ async def _generate_with_retry(prompt: str) -> str:
 # Helper: Always return an array
 # -------------------------------
 
+def _coerce_topic_item(item: Any) -> dict[str, Any] | None:
+    if isinstance(item, dict):
+        title = (item.get("title") or item.get("name") or "").strip()
+        description = (item.get("description") or item.get("summary") or "").strip()
+        type_ = (item.get("type") or "").strip().lower()
+        if type_ not in {"research", "capstone"}:
+            type_ = "research"
+        if not title:
+            return None
+        return {"title": title, "description": description, "type": type_}
+
+    if isinstance(item, str):
+        title = item.strip().strip("\"'")
+        if not title:
+            return None
+        return {"title": title, "description": "", "type": "research"}
+
+    return None
+
+
+def _normalize_topics(items: list[Any], max_items: int | None = None) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for it in items:
+        coerced = _coerce_topic_item(it)
+        if coerced is not None:
+            out.append(coerced)
+    if max_items is not None:
+        return out[:max_items]
+    return out
+
 def force_topic_array(data: Any) -> dict[str, list[dict[str, Any]]]:
     """Ensures output is always: {"topics": [ ... ] }."""
 
     if isinstance(data, dict) and isinstance(data.get("topics"), list):
         topics = data.get("topics")
-        if all(isinstance(t, dict) for t in topics):
-            return {"topics": topics}
-        return {"topics": [t for t in topics if isinstance(t, dict)]}
+        return {"topics": _normalize_topics(list(topics), max_items=10)}
 
     if isinstance(data, list):
-        return {"topics": [t for t in data if isinstance(t, dict)]}
+        return {"topics": _normalize_topics(data, max_items=10)}
 
     if isinstance(data, str):
         try:
@@ -251,7 +290,7 @@ app.add_middleware(
 # TOPICSPARK: TRENDING TOPICS
 # -------------------------------
 @app.get("/topicspark")
-async def get_trending_topics():
+async def get_trending_topics(page: int = 1, limit: int = 10):
     prompt = """
 You generate trending academic capstone and research topic ideas.
 
@@ -285,7 +324,16 @@ JSON ARRAY ONLY:
                 ]
             }
 
-        return topics
+        # Simple pagination for the frontend (best-effort).
+        try:
+            p = max(1, int(page))
+            l = max(1, min(50, int(limit)))
+        except Exception:
+            p, l = 1, 10
+
+        start = (p - 1) * l
+        end = start + l
+        return {"topics": (topics.get("topics") or [])[start:end]}
     except Exception as e:
         return {
             "error": _humanize_ollama_error(e),

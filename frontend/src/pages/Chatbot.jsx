@@ -21,21 +21,27 @@ const Chatbot = () => {
       let url = "";
       let payload = {};
 
+      const topic = paper?.title || paper?.topic || paper?.name || "";
+      const abstract = paper?.description || paper?.abstract || paper?.summary || "";
+      const authors = paper?.authors || paper?.author || "";
+      const year = paper?.year || "";
+      const type = paper?.type || "";
+
       if (source === "research") {
         url = "http://127.0.0.1:8001/ask_research";
         payload = {
-          topic: paper.title,
-          abstract: paper.description,
-          year: paper.year,
-          authors: paper.authors,
+          topic,
+          abstract,
+          year,
+          authors,
           question,
         };
       } else if (source === "topicspark") {
         url = "http://127.0.0.1:8001/ask_topicspark";
         payload = {
-          topic: paper.title,
-          abstract: paper.description,
-          type: paper.type,
+          topic,
+          abstract,
+          type,
           question,
         };
       }
@@ -47,7 +53,8 @@ const Chatbot = () => {
       });
 
       const data = await response.json();
-      const botMsg = { role: "bot", text: data.answer || "No answer." };
+      const botText = data.answer || data.error || "No answer.";
+      const botMsg = { role: "bot", text: botText };
       setMessages((m) => [...m, botMsg]);
     } catch (err) {
       setMessages((m) => [...m, { role: "bot", text: "Error contacting server." }]);
