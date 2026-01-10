@@ -9,11 +9,13 @@ export default function Mentors() {
     expertise: "all",
 
     minExperience: 0,
-    availability: "",
     sort: "relevance",
   });
   const [sampleMentors, setSampleMentors] = useState([]);
   const [selected, setSelected] = useState(null);
+
+  const [page, setPage] = useState(1);
+  const pageSize = 12;
 
   const [showAllExpertise, setShowAllExpertise] = useState(false);
 
@@ -64,14 +66,21 @@ export default function Mentors() {
     if (filters.minExperience) {
       items = items.filter((m) => m.experience >= filters.minExperience);
     }
-    if (filters.availability) {
-      items = items.filter((m) => m.availability === filters.availability);
-    }
     if (filters.sort === "experience") {
       items.sort((a, b) => b.experience - a.experience);
     }
     return items;
   }, [query, filters, sampleMentors]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [query, filters, sampleMentors]);
+
+  const totalPages = Math.max(1, Math.ceil(results.length / pageSize));
+  const paginatedResults = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return results.slice(start, start + pageSize);
+  }, [results, page]);
 
   function handleViewMore(m) {
     setSelected(m);
@@ -79,7 +88,7 @@ export default function Mentors() {
 
   return (
 
-    <div className="w-full flex flex-col items-center px-4 md:px-8 py-8">
+    <div className="min-h-screen w-full bg-gradient-to-b from-blue-100 to-blue-50 flex flex-col items-center px-4 md:px-8 py-8">
       <div className="w-full max-w-6xl">
         <div className="flex flex-col items-center">
           <main className="w-full text-center">
@@ -155,28 +164,6 @@ export default function Mentors() {
                 )}
               </div>
 
-              {/* Availability Filter */}
-              <div>
-                <h3 className="mb-3 text-sm font-semibold tracking-wider text-gray-500 uppercase text-left">
-                  Availability
-                </h3>
-                <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-                  {["Available", "Busy"].map((availability) => (
-                    <button
-                      key={availability}
-                      onClick={() => setFilters((f) => ({ ...f, availability }))}
-                      className={`px-4 md:px-5 py-2.5 rounded-lg border transition-all ${
-                        filters.availability === availability
-                          ? "bg-blue-600 text-white border-blue-600 shadow-md"
-                          : "bg-white text-gray-700 border-gray-300 hover:border-blue-600 hover:text-blue-600"
-                      }`}
-                    >
-                      {availability}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
             </div>
 
             {/* Results Section */}
@@ -190,14 +177,14 @@ export default function Mentors() {
                 {results.length === 0 ? (
                   <div className="col-span-full text-center text-slate-500 py-12 text-lg">No results found. Try adjusting your search or filters.</div>
                 ) : (
-                  results.map((mentor, idx) => (
+                  paginatedResults.map((mentor, idx) => (
                     <article
                       key={idx}
-                      className="bg-white rounded-2xl p-6 shadow hover:shadow-2xl transition transform hover:-translate-y-1 relative border border-slate-100"
+                      className="bg-white rounded-2xl p-6 shadow-md shadow-blue-200/60 hover:shadow-lg hover:shadow-blue-300/60 transition transform hover:-translate-y-1 relative border border-blue-100 border-t-4 border-t-blue-600"
                     >
-                      <h4 className="text-lg font-semibold mb-1">{mentor.name}</h4>
+                      <h4 className="text-lg font-semibold mb-1 text-blue-700">{mentor.name}</h4>
                       <div className="text-sm text-slate-600 mb-3">
-                        {mentor.expertise.join(", ")}
+                        {(mentor.expertise || []).join(", ")}
                       </div>
                       <p className="text-sm text-slate-700 mb-4 line-clamp-3">
                         {mentor.bio}
@@ -207,10 +194,56 @@ export default function Mentors() {
                         <div>{mentor.availability || "Unknown Availability"}</div>
                         <div>{mentor.experience} years</div>
                       </div>
+
+                      <div className="mt-5 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={mentor.email ? `mailto:${mentor.email}` : "mailto:"}
+                            className="text-sm px-3 py-1.5 bg-sky-50 text-sky-700 rounded-md hover:bg-sky-100"
+                          >
+                            Email
+                          </a>
+                          <a
+                            href={mentor.linkedin || "https://www.linkedin.com/"}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-sm px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                          >
+                            LinkedIn
+                          </a>
+                        </div>
+                      </div>
                     </article>
                   ))
                 )}
               </div>
+
+              {results.length > 0 && totalPages > 1 && (
+                <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                    className="px-4 py-2 rounded-lg border border-blue-200 text-blue-700 bg-white hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+
+                  <div className="text-sm text-slate-600">
+                    Page <span className="font-semibold text-blue-700">{page}</span> of{" "}
+                    <span className="font-semibold text-blue-700">{totalPages}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                    className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </section>
           </main>
         </div>
