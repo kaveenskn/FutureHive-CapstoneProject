@@ -13,6 +13,7 @@ Backend/.env
 
 # Ignore Python cache and compiled files
 __pycache__/
+firebase-service-account.json
 *.pyc
 *.pyo
 *.pyd

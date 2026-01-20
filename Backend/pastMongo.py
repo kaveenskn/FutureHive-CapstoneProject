@@ -1,4 +1,5 @@
 import pandas as pd
+import math
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
@@ -97,19 +98,71 @@ def initialize_vectorstores():
 # Helper Functions
 # -------------------------------------------------
 def get_default_projects(collection_type="research", limit=10):
-    research_docs, capstone_docs = load_collections()
+    # Backwards-compatible wrapper (kept for older callers)
+    results, _pagination = get_default_projects_paginated(
+        collection_type=collection_type,
+        page=1,
+        limit=limit,
+        year=None,
+    )
+    return results
 
-    docs = capstone_docs if collection_type == "capstone" else research_docs
 
-    return [
-        {
-            "title": doc.get("title", ""),
-            "description": doc.get("abstract", ""),
-            "authors": doc.get("author", ""),
-            "year": doc.get("year", "")
-        }
-        for doc in docs[:limit]
-    ]
+def get_default_projects_paginated(collection_type="research", page=1, limit=12, year=None):
+    db = get_db()
+    collection = db["Capstone_projects"] if collection_type == "capstone" else db["Past_Research_projects"]
+
+    query = {}
+    if year and str(year).lower() != "all":
+        year_str = str(year)
+        year_int = None
+        try:
+            year_int = int(year_str)
+        except Exception:
+            year_int = None
+
+        if year_int is None:
+            query["year"] = year_str
+        else:
+            query["$or"] = [{"year": year_str}, {"year": year_int}]
+
+    total = collection.count_documents(query)
+
+    safe_limit = max(1, min(int(limit), 50))
+    safe_page = max(1, int(page))
+    skip = (safe_page - 1) * safe_limit
+    total_pages = max(1, int(math.ceil(total / safe_limit)))
+
+    cursor = (
+        collection.find(query)
+        .sort([("_id", -1)])
+        .skip(skip)
+        .limit(safe_limit)
+    )
+
+    results = []
+    for doc in cursor:
+        results.append(
+            {
+                "title": doc.get("title", ""),
+                "description": doc.get("abstract", ""),
+                "authors": doc.get("author", ""),
+                "year": doc.get("year", ""),
+                "university": doc.get("university", "Unknown University"),
+                "type": collection_type,
+            }
+        )
+
+    pagination = {
+        "page": safe_page,
+        "limit": safe_limit,
+        "total": total,
+        "total_pages": total_pages,
+        "has_prev": safe_page > 1,
+        "has_next": safe_page < total_pages,
+    }
+
+    return results, pagination
 
 def search_projects(user_query, collection_type="research"):
     initialize_vectorstores()
@@ -139,8 +192,17 @@ def search_projects(user_query, collection_type="research"):
 def default_pastpapers():
     try:
         collection_type = request.args.get('type', 'research')
-        results = get_default_projects(collection_type=collection_type, limit=10)
-        return jsonify({"results": results}), 200
+        page = request.args.get('page', 1)
+        limit = request.args.get('limit', 12)
+        year = request.args.get('year', None)
+
+        results, pagination = get_default_projects_paginated(
+            collection_type=collection_type,
+            page=page,
+            limit=limit,
+            year=year,
+        )
+        return jsonify({"results": results, "pagination": pagination}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

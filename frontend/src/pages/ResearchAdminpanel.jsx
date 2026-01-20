@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import MentorManagementSection from "../components/admin/MentorManagementSection";
 
 // API Base URL
 const API_BASE_URL = "http://localhost:5001/api";
@@ -95,9 +96,13 @@ const AdminPanel = ({ onBack }) => {
   const [users, setUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const usersPerPage = 5;
   const [activeSection, setActiveSection] = useState("users");
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [userToEdit, setUserToEdit] = useState(null);
+  const [editForm, setEditForm] = useState({ name: "", email: "", role: "User" });
   const [stats, setStats] = useState({
     total_users: 0,
     total_research: 0,
@@ -129,18 +134,39 @@ const AdminPanel = ({ onBack }) => {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
+      setApiError("");
       const response = await fetch(
         `${API_BASE_URL}/users?page=${currentPage}&limit=${usersPerPage}&search=${searchQuery}`
       );
-      const data = await response.json();
+
+      let data = null;
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
+
+      if (!response.ok) {
+        const msg =
+          (data && data.error) ||
+          `Failed to fetch users (HTTP ${response.status}). Is the Firebase API running on port 5001?`;
+        setApiError(msg);
+        setUsers([]);
+        return;
+      }
 
       if (data.success) {
         setUsers(data.users);
       } else {
         console.error("Failed to fetch users:", data.error);
+        setApiError(data.error || "Failed to fetch users.");
       }
     } catch (error) {
       console.error("Error fetching users:", error);
+      setApiError(
+        "Could not connect to the Firebase API (http://localhost:5001). Start the Backend/firebase_api_server.js server."
+      );
+      setUsers([]);
     } finally {
       setIsLoading(false);
     }
@@ -153,6 +179,8 @@ const AdminPanel = ({ onBack }) => {
 
       if (data.success) {
         setStats(data.stats);
+      } else if (data?.error) {
+        setApiError(data.error);
       }
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -201,17 +229,29 @@ const AdminPanel = ({ onBack }) => {
   };
 
   const handleEdit = (user) => {
-    const newName = prompt("Enter new name:", user.name);
-    const newEmail = prompt("Enter new email:", user.email);
-    const newRole = prompt("Enter new role (Admin/User/Moderator):", user.role);
+    setUserToEdit(user);
+    setEditForm({
+      name: user?.name || "",
+      email: user?.email || "",
+      role: user?.role || "User",
+    });
+    setShowEditModal(true);
+  };
 
-    if (newName && newEmail && newRole) {
-      updateUser(user.id, {
-        name: newName,
-        email: newEmail,
-        role: newRole,
-      });
+  const handleSaveEdit = async () => {
+    if (!userToEdit) return;
+    const name = editForm.name.trim();
+    const email = editForm.email.trim();
+    const role = (editForm.role || "").trim();
+
+    if (!name || !email || !role) {
+      alert("Please fill all fields.");
+      return;
     }
+
+    await updateUser(userToEdit.id, { name, email, role });
+    setShowEditModal(false);
+    setUserToEdit(null);
   };
 
   const updateUser = async (userId, updates) => {
@@ -273,6 +313,28 @@ const AdminPanel = ({ onBack }) => {
           </button>
         </div>
       </header>
+
+      {apiError && (
+        <div className="max-w-7xl sm:px-6 lg:px-8 px-4 pt-6 mx-auto">
+          <div className="border-red-200 bg-red-50 text-red-800 rounded-lg border px-4 py-3">
+            <div className="font-semibold">Users not loading</div>
+            <div className="text-sm break-words">{apiError}</div>
+          </div>
+        </div>
+      )}
+
+      {showEditModal && (
+        <EditUserModal
+          user={userToEdit}
+          form={editForm}
+          onChange={(next) => setEditForm(next)}
+          onCancel={() => {
+            setShowEditModal(false);
+            setUserToEdit(null);
+          }}
+          onSave={handleSaveEdit}
+        />
+      )}
 
       <div className="max-w-7xl sm:px-6 lg:px-8 px-4 py-8 mx-auto">
         <div className="md:grid-cols-3 grid grid-cols-1 gap-6 mb-8">
@@ -418,6 +480,31 @@ const AdminPanel = ({ onBack }) => {
                     />
                   </svg>
                   Research Management
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => setActiveSection("mentors")}
+                  className={`w-full text-left flex items-center px-4 py-2 rounded-lg transition-colors ${
+                    activeSection === "mentors"
+                      ? "bg-blue-50 text-blue-600"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <svg
+                    className="w-5 h-5 mr-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197"
+                    />
+                  </svg>
+                  Mentor Management
                 </button>
               </li>
             </ul>
@@ -692,7 +779,7 @@ const AdminPanel = ({ onBack }) => {
                 </div>
               )}
             </div>
-          ) : (
+          ) : activeSection === "research" ? (
             <div className="flex-1">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h2 className="text-xl font-semibold text-gray-900">
@@ -814,7 +901,74 @@ const AdminPanel = ({ onBack }) => {
                 </div>
               </div>
             </div>
+          ) : (
+            <MentorManagementSection />
           )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const EditUserModal = ({ user, form, onChange, onCancel, onSave }) => {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="w-full max-w-lg mx-4 overflow-hidden bg-white rounded-lg shadow-xl">
+        <div className="p-6 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">Edit User</h3>
+          <p className="mt-1 text-sm text-gray-600">
+            Update details for <span className="font-semibold">{user?.name}</span>
+          </p>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Name</label>
+            <input
+              value={form.name}
+              onChange={(e) => onChange({ ...form, name: e.target.value })}
+              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Full name"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <input
+              value={form.email}
+              onChange={(e) => onChange({ ...form, email: e.target.value })}
+              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="email@example.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Role</label>
+            <select
+              value={form.role}
+              onChange={(e) => onChange({ ...form, role: e.target.value })}
+              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="Admin">Admin</option>
+              <option value="Moderator">Moderator</option>
+              <option value="User">User</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="bg-gray-50 flex px-6 py-4 space-x-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 px-4 py-2 text-gray-700 transition-colors bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onSave}
+            className="flex-1 px-4 py-2 text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700"
+          >
+            Save
+          </button>
         </div>
       </div>
     </div>

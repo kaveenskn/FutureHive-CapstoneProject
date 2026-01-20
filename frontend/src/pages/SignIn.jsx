@@ -87,7 +87,7 @@ const SignIn = () => {
 
     // 🔹 Navigate based on role
     if (role === "admin") {
-      navigate("/admin", { replace: true });
+      navigate("/adminpanel", { replace: true });
     } else {
       navigate("/", { replace: true });
     }

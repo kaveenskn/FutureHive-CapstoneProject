@@ -1,14 +1,38 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const TopicSparkBody = () => {
+  const TRENDING_PAGE_SIZE = 12;
+  const SEARCH_PAGE_SIZE = 12;
+  const MIN_FILTER_RESULTS = 9;
+  const AUTO_FILL_MAX_ATTEMPTS = 3;
+
   const [selectedType, setSelectedType] = useState("all");
   const [projects, setProjects] = useState([]);
   const [query, setQuery] = useState("");
+  const [activeQuery, setActiveQuery] = useState("");
+  const [mode, setMode] = useState("trending"); // 'trending' | 'search'
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const navigate = useNavigate();
+
+  const autoFillRef = useRef({ key: "", attempts: 0, inFlight: false });
+  const requestRef = useRef({ id: 0, controller: null });
+
+  const beginRequest = () => {
+    // Cancel any in-flight request so older responses can't overwrite newer UI state.
+    try {
+      requestRef.current.controller?.abort();
+    } catch {
+      // ignore
+    }
+
+    const controller = new AbortController();
+    const id = requestRef.current.id + 1;
+    requestRef.current = { id, controller };
+    return { id, signal: controller.signal };
+  };
 
   const types = [
     { id: "all", label: "All Types" },
@@ -17,9 +41,11 @@ const TopicSparkBody = () => {
   ];
 
   // ⚙️ Helper function to map topic data
-  const mapTopics = (topics = []) =>
+  const mapTopics = (topics = [], pageNumber = 1) =>
     topics.map((t, idx) => ({
-      id: t.id || encodeURIComponent((t.title || "") + "-" + idx),
+      id:
+        t.id ||
+        encodeURIComponent((t.title || "") + "-" + String(pageNumber) + "-" + idx),
       title: t.title || "Untitled",
       description: t.description || "",
       type: t.type
@@ -30,52 +56,106 @@ const TopicSparkBody = () => {
     }));
 
   // ✅ Fetch all topics (with pagination)
-  const fetchTopics = async (pageNumber = 1, append = false) => {
+  const fetchTopics = async (pageNumber = 1, append = false, typeOverride = null) => {
+    const { id, signal } = beginRequest();
     setLoading(true);
     try {
+      const effectiveType =
+        typeOverride && typeOverride !== "all" ? String(typeOverride).toLowerCase() : "";
+      const typeParam = effectiveType ? `&type=${encodeURIComponent(effectiveType)}` : "";
       const res = await fetch(
-        `http://127.0.0.1:8000/topicspark?page=${pageNumber}&limit=6`
+        `http://127.0.0.1:8000/topicspark?page=${pageNumber}&limit=${TRENDING_PAGE_SIZE}${typeParam}`,
+        { signal }
       );
       const data = await res.json();
       const topics = data.topics || data;
-      const mapped = mapTopics(topics);
+      const mapped = mapTopics(topics, pageNumber);
+      if (requestRef.current.id !== id || signal.aborted) return;
 
-      if (mapped.length === 0) setHasMore(false);
+      setHasMore(mapped.length >= TRENDING_PAGE_SIZE);
       setProjects((prev) => (append ? [...prev, ...mapped] : mapped));
     } catch (e) {
+      if (e?.name === "AbortError") return;
       console.error("Error fetching topics:", e);
+      if (requestRef.current.id !== id) return;
       setProjects([]);
+      setHasMore(false);
     } finally {
-      setLoading(false);
+      if (requestRef.current.id === id) setLoading(false);
+    }
+  };
+
+  const fetchSearch = async (
+    pageNumber = 1,
+    append = false,
+    q = "",
+    typeOverride = null
+  ) => {
+    const trimmed = String(q || "").trim();
+    if (!trimmed) return;
+
+    const { id, signal } = beginRequest();
+    setLoading(true);
+    try {
+      const effectiveType =
+        typeOverride && typeOverride !== "all" ? String(typeOverride).toLowerCase() : "";
+
+      const res = await fetch("http://127.0.0.1:8000/topicspark/search", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        signal,
+        body: JSON.stringify({
+          query: trimmed,
+          page: pageNumber,
+          limit: SEARCH_PAGE_SIZE,
+          type: effectiveType || undefined,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const topics = data.topics || data;
+        const mapped = mapTopics(topics, pageNumber);
+        if (requestRef.current.id !== id || signal.aborted) return;
+        setHasMore(mapped.length >= SEARCH_PAGE_SIZE);
+        setProjects((prev) => (append ? [...prev, ...mapped] : mapped));
+      } else {
+        if (requestRef.current.id !== id || signal.aborted) return;
+        setHasMore(false);
+      }
+    } catch (e) {
+      if (e?.name === "AbortError") return;
+      console.error("Error searching topics:", e);
+      if (requestRef.current.id !== id) return;
+      setHasMore(false);
+    } finally {
+      if (requestRef.current.id === id) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTopics();
+    setMode("trending");
+    setPage(1);
+    setHasMore(true);
+    fetchTopics(1, false);
+    return () => {
+      try {
+        requestRef.current.controller?.abort();
+      } catch {
+        // ignore
+      }
+    };
   }, []);
 
   // ✅ Handle search (with backend)
   const handleSearch = async () => {
     if (!query.trim()) return;
-    setLoading(true);
-    try {
-      const res = await fetch("http://127.0.0.1:8000/topicspark/search", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ query }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const topics = data.topics || data;
-        const mapped = mapTopics(topics);
-        setProjects(mapped);
-        setHasMore(false);
-      }
-    } catch (e) {
-      console.error("Error searching topics:", e);
-    } finally {
-      setLoading(false);
-    }
+    const trimmed = query.trim();
+    setActiveQuery(trimmed);
+    setMode("search");
+    setPage(1);
+    setHasMore(true);
+    await fetchSearch(1, false, trimmed, selectedType);
   };
 
   // ✅ Filter by project type
@@ -85,6 +165,44 @@ const TopicSparkBody = () => {
       : projects.filter(
           (p) => p.type.toLowerCase() === selectedType.toLowerCase()
         );
+
+  // Auto-fill filter pages so Research/Capstone show at least MIN_FILTER_RESULTS when possible.
+  useEffect(() => {
+    const typeLower = String(selectedType || "all").toLowerCase();
+    if (typeLower === "all") return;
+    if (loading || !hasMore) return;
+    if (filteredProjects.length >= MIN_FILTER_RESULTS) return;
+
+    const key = `${mode}|${typeLower}|${activeQuery}`;
+    if (autoFillRef.current.key !== key) {
+      autoFillRef.current = { key, attempts: 0, inFlight: false };
+    }
+    if (autoFillRef.current.inFlight) return;
+    if (autoFillRef.current.attempts >= AUTO_FILL_MAX_ATTEMPTS) return;
+
+    autoFillRef.current.inFlight = true;
+    autoFillRef.current.attempts += 1;
+
+    const nextPage = page + 1;
+    setPage(nextPage);
+
+    const run =
+      mode === "search"
+        ? fetchSearch(nextPage, true, activeQuery, typeLower)
+        : fetchTopics(nextPage, true, typeLower);
+
+    Promise.resolve(run).finally(() => {
+      autoFillRef.current.inFlight = false;
+    });
+  }, [
+    selectedType,
+    filteredProjects.length,
+    loading,
+    hasMore,
+    page,
+    mode,
+    activeQuery,
+  ]);
 
   const navigateToChatbot = (project) => {
 
@@ -259,7 +377,11 @@ const TopicSparkBody = () => {
                 onClick={() => {
                   const nextPage = page + 1;
                   setPage(nextPage);
-                  fetchTopics(nextPage, true);
+                  if (mode === "search") {
+                    fetchSearch(nextPage, true, activeQuery, selectedType);
+                  } else {
+                    fetchTopics(nextPage, true, selectedType);
+                  }
                 }}
               >
                 Load More Projects
