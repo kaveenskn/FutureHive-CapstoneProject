@@ -22,14 +22,16 @@ const ResearchAssistant = () => {
   const mapTypeForBackend = (uiType) => {
     if (!uiType) return "research";
     const t = String(uiType).toLowerCase();
+    if (t === "all") return "all";
     if (t === "capstone") return "capstone";
+    if (t === "research") return "research";
     return "research";
   };
 
   useEffect(() => {
     const fetchDefault = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:5000/past/default?limit=100");
+        const res = await fetch("http://127.0.0.1:5000/past/default?limit=1000&type=all");
         if (res.ok) {
           const data = await res.json();
           setResults(data.results || []);
