@@ -9,7 +9,7 @@ app.use(express.json());
 // Initialize Firebase Admin SDK
 // You need to download your service account key from Firebase Console
 // Project Settings > Service Accounts > Generate New Private Key
-const serviceAccount = require("./firebase-service-account.json");
+const serviceAccount = require("./futurehive-capstoneproject-firebase-adminsdk-fbsvc-592d26b4e3.json");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
