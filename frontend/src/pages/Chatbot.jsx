@@ -78,12 +78,12 @@ const Chatbot = () => {
 
   return (
     <div className="h-screen w-full flex flex-col bg-gradient-to-b from-blue-100 to-blue-50">
-      <div className="flex-1 flex flex-col items-center justify-center px-4 md:px-6 py-6 md:py-8">
-        <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg p-4 md:p-6 flex flex-col h-full md:mb-6">
+      <div className="flex-1 flex flex-col items-center px-4 md:px-6 py-6 md:py-8 min-h-0">
+        <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg p-4 md:p-6 flex flex-col flex-1 min-h-0 overflow-hidden md:mb-6">
           <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-3 md:mb-4">Chat with AI</h2>
           <h3 className="text-lg md:text-xl font-semibold text-slate-700 mb-4 md:mb-6">{paper.title}</h3>
 
-          <div className="flex-1 mb-4 md:mb-6 bg-gray-100 p-3 md:p-4 rounded-lg shadow-inner overflow-y-auto">
+          <div className="flex-1 min-h-0 mb-4 md:mb-6 bg-gray-100 p-3 md:p-4 rounded-lg shadow-inner overflow-y-auto">
             {messages.length === 0 && (
               <p className="text-gray-500 text-center">Ask anything about this paper.</p>
             )}
@@ -93,7 +93,7 @@ const Chatbot = () => {
                 className={`mb-3 md:mb-4 flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`px-3 md:px-4 py-2 rounded-lg shadow-md max-w-xs ${
+                  className={`px-3 md:px-4 py-2 rounded-lg shadow-md max-w-[80%] ${
                     m.role === "user"
                       ? "bg-blue-600 text-white"
                       : "bg-gray-200 text-gray-900"

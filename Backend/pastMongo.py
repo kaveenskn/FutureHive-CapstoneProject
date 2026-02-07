@@ -1,10 +1,12 @@
 import pandas as pd
 import math
+import os
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from textblob import TextBlob
 from langchain_core.documents import Document
+from bson import ObjectId
 from flask import request, jsonify, Blueprint
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -14,6 +16,14 @@ from database import get_db
 load_dotenv()
 
 past_papers = Blueprint("past_papers", __name__)
+
+
+_DEBUG = str(os.getenv("DEBUG_PASTMONGO", "")).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _debug(*parts):
+    if _DEBUG:
+        print("[pastMongo]", *parts, flush=True)
 
 
 def _normalize_collection_type(value: str | None) -> str:
@@ -92,8 +102,19 @@ def load_collections():
     research_docs = list(collection1.find())
     capstone_docs = list(collection2.find())
 
-    return research_docs, capstone_docs
+    # 🔍 DEBUG PRINTS
+    print("---- MongoDB Data Fetch Debug ----")
+    print(f"Research projects count: {len(research_docs)}")
+    print(f"Capstone projects count: {len(capstone_docs)}")
 
+    if research_docs:
+        print("Sample Research Document:", research_docs[0])
+
+    if capstone_docs:
+        print("Sample Capstone Document:", capstone_docs[0])
+    print("--------------------------------")
+
+    return research_docs, capstone_docs
 # -------------------------------------------------
 # Convert MongoDB docs to LangChain Documents
 # -------------------------------------------------
@@ -128,6 +149,34 @@ def convert_to_documents(docs):
         )
     return converted
 
+
+def _try_object_id(value: str | None):
+    if not value:
+        return None
+    try:
+        return ObjectId(str(value))
+    except Exception:
+        return None
+
+
+def _lookup_doc_by_id(db, oid_str: str, preferred_collection: str | None = None):
+    oid = _try_object_id(oid_str)
+    if oid is None:
+        return None, None
+
+    if preferred_collection in {"Past_Research_projects", "Capstone_projects"}:
+        doc = db[preferred_collection].find_one({"_id": oid})
+        if doc is not None:
+            return doc, preferred_collection
+
+    # Fallback: try both collections
+    for name in ("Past_Research_projects", "Capstone_projects"):
+        doc = db[name].find_one({"_id": oid})
+        if doc is not None:
+            return doc, name
+
+    return None, None
+
 # -------------------------------------------------
 # Vectorstore Initialization (LAZY)
 # -------------------------------------------------
@@ -140,7 +189,13 @@ def initialize_vectorstores():
     research_docs, capstone_docs = load_collections()
 
     documents = convert_to_documents(research_docs)
+    # Tag each document with its source collection (helps downstream type detection)
+    for d in documents:
+        d.metadata["collection"] = "research"
+
     capstone_documents = convert_to_documents(capstone_docs)
+    for d in capstone_documents:
+        d.metadata["collection"] = "capstone"
 
     embeddings_model = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-mpnet-base-v2"
@@ -255,26 +310,55 @@ def search_projects(user_query, collection_type="research"):
         results = retriever1.invoke(user_query)
 
     formatted_results = []
+    db = get_db()
+    _debug("POST /past/search", "type=", normalized_type, "query=", str(user_query)[:120])
     for doc in results:
-        # Determine type from vectorstore collection if available; fallback to request type.
+        metadata = doc.metadata or {}
+
+        # Determine type from metadata if present; fallback to request type.
         result_type = normalized_type
-        try:
-            # Some vectorstores may include a "collection" name in metadata.
-            collection_name = (doc.metadata or {}).get("collection", "")
-            if isinstance(collection_name, str) and "capstone" in collection_name.lower():
+        meta_collection = metadata.get("collection")
+        if isinstance(meta_collection, str) and meta_collection.lower() in {"capstone", "research"}:
+            result_type = meta_collection.lower()
+        elif normalized_type == "all":
+            # If collection metadata is missing, infer it by looking up the _id.
+            _found_doc, found_collection = _lookup_doc_by_id(db, metadata.get("_id", ""))
+            if found_collection == "Capstone_projects":
                 result_type = "capstone"
-            elif isinstance(collection_name, str) and "research" in collection_name.lower():
+            elif found_collection == "Past_Research_projects":
                 result_type = "research"
+
+        # Always rehydrate the author from Mongo by _id (vectorstore metadata can be stale).
+        hydrated_author = None
+        try:
+            preferred = None
+            if result_type == "capstone":
+                preferred = "Capstone_projects"
+            elif result_type == "research":
+                preferred = "Past_Research_projects"
+
+            source_doc, _src = _lookup_doc_by_id(db, metadata.get("_id", ""), preferred_collection=preferred)
+            if source_doc is not None:
+                hydrated_author = _first_present(source_doc, ["author", "Author", "authors", "Authors"], "")
         except Exception:
-            pass
+            hydrated_author = None
+
+        _debug(
+            "search hit",
+            "id=", metadata.get("_id", ""),
+            "type=", result_type,
+            "title=", metadata.get("title", ""),
+            "meta_author=", metadata.get("author", ""),
+            "hydrated_author=", hydrated_author,
+        )
 
         formatted_results.append({
-            "title": doc.metadata.get("title", ""),
-            "authors": doc.metadata.get("author", ""),
-            "description": doc.metadata.get("abstract", ""),
-            "year": doc.metadata.get("year", ""),
+            "title": metadata.get("title", ""),
+            "authors": hydrated_author if hydrated_author not in (None, "") else metadata.get("author", ""),
+            "description": metadata.get("abstract", ""),
+            "year": metadata.get("year", ""),
             "type": result_type,
-            "university": doc.metadata.get("university", "Unknown University")
+            "university": metadata.get("university", "Unknown University")
         })
 
     return formatted_results
@@ -290,12 +374,30 @@ def default_pastpapers():
         limit = request.args.get('limit', 12)
         year = request.args.get('year', None)
 
+        _debug(
+            "GET /past/default",
+            "type=", collection_type,
+            "page=", page,
+            "limit=", limit,
+            "year=", year,
+        )
+
         results, pagination = get_default_projects_paginated(
             collection_type=collection_type,
             page=page,
             limit=limit,
             year=year,
         )
+
+        if _DEBUG:
+            for item in (results or [])[:5]:
+                _debug(
+                    "default item",
+                    "type=", item.get("type"),
+                    "title=", item.get("title"),
+                    "authors=", item.get("authors"),
+                )
+
         return jsonify({"results": results, "pagination": pagination}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

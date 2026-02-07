@@ -8,6 +8,9 @@ import { doc, setDoc, deleteDoc } from "firebase/firestore";
 const YEARS = ["all", "2024", "2023", "2022", "2021", "2020"];
 const TYPES = ["all", "Research", "Capstone", "Community"];
 
+const DEFAULT_RESULTS_CACHE_KEY = "futurehive:pastResearch:defaultResults:v1";
+const DEFAULT_RESULTS_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
 const ResearchAssistant = () => {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -29,18 +32,59 @@ const ResearchAssistant = () => {
   };
 
   useEffect(() => {
+    const controller = new AbortController();
+
+    const readCache = () => {
+      try {
+        const raw = sessionStorage.getItem(DEFAULT_RESULTS_CACHE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || !Array.isArray(parsed.results) || typeof parsed.ts !== "number") {
+          return null;
+        }
+        if (Date.now() - parsed.ts > DEFAULT_RESULTS_CACHE_TTL_MS) return null;
+        return parsed.results;
+      } catch {
+        return null;
+      }
+    };
+
+    const writeCache = (nextResults) => {
+      try {
+        sessionStorage.setItem(
+          DEFAULT_RESULTS_CACHE_KEY,
+          JSON.stringify({ ts: Date.now(), results: nextResults })
+        );
+      } catch {
+        // ignore storage failures (private mode, quota, etc.)
+      }
+    };
+
+    const cached = readCache();
+    if (cached) {
+      setResults(cached);
+      return () => controller.abort();
+    }
+
     const fetchDefault = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:5000/past/default?limit=1000&type=all");
+        const res = await fetch(
+          "http://127.0.0.1:5000/past/default?limit=1000&type=all",
+          { signal: controller.signal }
+        );
         if (res.ok) {
           const data = await res.json();
-          setResults(data.results || []);
+          const next = data.results || [];
+          setResults(next);
+          writeCache(next);
         }
       } catch (e) {
+        if (e?.name === "AbortError") return;
         console.error(e);
       }
     };
     fetchDefault();
+    return () => controller.abort();
   }, []);
 
   const handleSearch = async () => {

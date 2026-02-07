@@ -119,6 +119,48 @@ def _ollama_generate_sync(prompt: str) -> str:
     return str(text).strip()
 
 
+def _clean_single_paragraph(text: str) -> str:
+    s = (text or "").strip()
+    if not s:
+        return s
+
+    # Remove fenced code blocks if the model emits them.
+    s = re.sub(r"```.*?```", " ", s, flags=re.S)
+
+    # If the model repeats a template like "### Answer: ...", extract the last answer section.
+    matches = list(re.finditer(r"(?:^|\n)\s*(?:#+\s*)?answer\s*:\s*", s, flags=re.I))
+    if matches:
+        s = s[matches[-1].end() :].strip()
+
+    lines = [ln.strip() for ln in s.splitlines() if ln.strip()]
+    filtered: list[str] = []
+    for ln in lines:
+        if re.match(r"^(?:#+\s*)?(content|question|answer)\s*:\s*", ln, flags=re.I):
+            continue
+        if re.match(
+            r"^(?:#+\s*)?(title|topic|year|authors?|abstract|context)\s*:\s*",
+            ln,
+            flags=re.I,
+        ):
+            continue
+        # Drop pure list markers; we'll join remaining text into a paragraph.
+        ln = re.sub(r"^\s*(?:\d+\.|[-*•])\s+", "", ln)
+        filtered.append(ln)
+
+    if filtered:
+        s = " ".join(filtered)
+
+    # Remove common markdown emphasis.
+    s = re.sub(r"\*\*(.*?)\*\*", r"\1", s)
+    s = re.sub(r"__(.*?)__", r"\1", s)
+    s = re.sub(r"\*(.*?)\*", r"\1", s)
+
+    # Collapse whitespace.
+    s = re.sub(r"\s+", " ", s).strip()
+    s = s.lstrip(":-• ").strip()
+    return s
+
+
 async def _generate_with_retry(prompt: str) -> str:
     max_retries = 3
     base_delay = 0.8
@@ -168,11 +210,13 @@ async def ask_research(request: Request):
         return {"answer": f"Year: {year or 'Not provided'}"}
 
     prompt = f"""
-You are an academic assistant that gives short, insightful answers.
+You are an academic assistant.
 
-Given the information below, read it carefully and answer the question directly and concisely.
-Avoid long structured sections like "summary", "strengths", etc.
-Write 3–5 clear sentences that sound natural and professional.
+Answer the question directly and concisely using ONLY the provided information.
+Return a single paragraph of plain text (3–5 sentences).
+Do NOT use Markdown (no '###', no bullets, no numbering, no bold/italics).
+Do NOT include headings or labels like "Content:", "Question:", or "Answer:".
+Do NOT repeat the question.
 
 Title: {topic}
 Year: {year}
@@ -180,13 +224,11 @@ Authors: {authors}
 Abstract: {abstract}
 
 Question: {question}
-
-Answer:
 """.strip()
 
     try:
         answer = await _generate_with_retry(prompt)
-        return {"answer": answer}
+        return {"answer": _clean_single_paragraph(answer)}
     except Exception as e:
         return {"error": _humanize_ollama_error(e), "details": str(e)}
 
@@ -203,24 +245,24 @@ async def ask_topicspark(request: Request):
         return {"error": "No topic or abstract provided"}
 
     prompt = f"""
-You are an academic assistant that gives short, practical answers.
+You are an academic assistant.
 
-Given the information below, answer the question directly and concisely.
-Avoid long structured sections like "summary", "strengths", etc.
-Write 3–5 clear sentences that sound natural and professional.
+Answer the question directly and concisely using ONLY the provided information.
+Return a single paragraph of plain text (3–5 sentences).
+Do NOT use Markdown (no '###', no bullets, no numbering, no bold/italics).
+Do NOT include headings or labels like "Content:", "Question:", or "Answer:".
+Do NOT repeat the question.
 
 Topic: {topic}
 Type: {type_}
 Context/Abstract: {abstract}
 
 Question: {question}
-
-Answer:
 """.strip()
 
     try:
         answer = await _generate_with_retry(prompt)
-        return {"answer": answer}
+        return {"answer": _clean_single_paragraph(answer)}
     except Exception as e:
         return {"error": _humanize_ollama_error(e), "details": str(e)}
 

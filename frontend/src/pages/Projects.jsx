@@ -1,11 +1,133 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { ClipboardPlus, Flag, BarChart3 } from "lucide-react";
-import { motion } from "framer-motion";
+import { ClipboardPlus, Flag, BarChart3, Search, Plus, Trash2, ExternalLink, Layout, Users, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { doc, getDocs, addDoc, deleteDoc, collection, query, where, or } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from "../components/Firebase";
+
+// --- Sub-Component for Individual Project Card ---
+const ProjectCard = ({ project: p, getTypeStyles, navigate, handleDelete }) => {
+    const [showTeam, setShowTeam] = useState(false);
+    const styles = getTypeStyles(p.type);
+
+    return (
+        <motion.div
+            layout
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className={`bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-slate-100 flex flex-col group ${styles.border} relative`}
+        >
+            <div className="p-6 pb-4 flex-1 relative">
+                {/* Header: Type and Year */}
+                <div className="flex justify-between items-start mb-4">
+                    <div className="flex gap-2">
+                        <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider ${styles.badge}`}>
+                            {p.type}
+                        </span>
+                    </div>
+                    <span className="text-xs font-semibold text-slate-400">
+                        {p.year}
+                    </span>
+                </div>
+
+                {/* Title */}
+                <h3 className={`text-xl font-bold text-slate-900 mb-3 transition-colors ${styles.titleHover}`}>
+                    {p.title}
+                </h3>
+
+                {/* Content Area: Description vs Team Details */}
+                <div className="relative min-h-[80px]">
+                    <AnimatePresence mode="wait">
+                        {!showTeam ? (
+                            <motion.p
+                                key="desc"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="text-slate-500 text-sm leading-relaxed line-clamp-3"
+                            >
+                                {p.description || "No description provided."}
+                            </motion.p>
+                        ) : (
+                            <motion.div
+                                key="team"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="text-sm space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-100 absolute inset-0 overflow-y-auto no-scrollbar"
+                            >
+                                <div className="grid grid-cols-[80px_1fr] gap-x-2 items-center">
+                                    <span className="text-xs font-bold text-slate-400 uppercase">Supervisor</span>
+                                    <span className="truncate font-medium text-slate-700" title={p.supervisorEmail}>{p.supervisorEmail || '-'}</span>
+                                </div>
+                                <div className="grid grid-cols-[80px_1fr] gap-x-2 items-center">
+                                    <span className="text-xs font-bold text-slate-400 uppercase">Mentor</span>
+                                    <span className="truncate font-medium text-slate-700" title={p.mentorEmail}>{p.mentorEmail || '-'}</span>
+                                </div>
+                                <div className="grid grid-cols-[80px_1fr] gap-x-2 items-center">
+                                    <span className="text-xs font-bold text-slate-400 uppercase">Leader</span>
+                                    <span className="truncate font-medium text-slate-700" title={p.leaderEmail}>{p.leaderEmail || '-'}</span>
+                                </div>
+                                <div className="grid grid-cols-[80px_1fr] gap-x-2 items-start">
+                                    <span className="text-xs font-bold text-slate-400 uppercase mt-1">Team</span>
+                                    <div className="flex flex-wrap gap-1">
+                                        {p.team && p.team.length > 0 ? (
+                                            p.team.slice(0, 3).map((member, i) => (
+                                                <span key={i} className="text-xs bg-white border border-slate-200 px-1.5 py-0.5 rounded text-slate-600 truncate max-w-full">
+                                                    {member.split('@')[0]}
+                                                </span>
+                                            ))
+                                        ) : '-'}
+                                        {p.team && p.team.length > 3 && <span className="text-xs text-slate-400">+{p.team.length - 3}</span>}
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 mt-auto">
+                <div className="flex items-center justify-between text-xs text-slate-500 mb-4">
+                    <span className="flex items-center gap-1">
+                        <div className={`w-2 h-2 rounded-full ${styles.accent}`}></div>
+                        Active Team
+                    </span>
+                    <span className="font-semibold text-slate-700">{p.team?.length || 0} Members</span>
+                </div>
+
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => navigate(`/projects/${p.id}`)}
+                        className={`flex-1 py-2 bg-white border border-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition shadow-sm ${styles.button} flex items-center justify-center gap-2`}
+                    >
+                        View Details
+                    </button>
+
+                    <button
+                        onClick={() => setShowTeam(!showTeam)}
+                        className={`px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg transition shadow-sm hover:bg-slate-50 ${showTeam ? 'bg-slate-100 border-slate-300' : ''}`}
+                        title={showTeam ? "Hide Team Info" : "View Team Info"}
+                    >
+                        {showTeam ? <X size={18} /> : <Users size={18} />}
+                    </button>
+
+                    <button
+                        onClick={() => handleDelete(p.id)}
+                        className="px-3 py-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition border border-transparent hover:border-red-100"
+                        title="Delete Project"
+                    >
+                        <Trash2 size={18} />
+                    </button>
+                </div>
+            </div>
+        </motion.div>
+    );
+};
 
 export default function Projects() {
     const navigate = useNavigate();
@@ -22,7 +144,9 @@ export default function Projects() {
     });
     const [isOpen, setIsOpen] = useState(false);
     const [user, setUser] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
 
+    // --- Effects & Data Fetching ---
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             if (currentUser) {
@@ -57,10 +181,10 @@ export default function Projects() {
             setProjects(fetchedProjects);
         } catch (error) {
             console.error("Error fetching projects:", error);
-            toast.error("Failed to load projects.");
         }
     };
 
+    // --- Handlers ---
     const handleChange = (e) => {
         const { name, value } = e.target;
         setForm((f) => ({ ...f, [name]: value }));
@@ -114,6 +238,7 @@ export default function Projects() {
 
     const handleDelete = async (projectId) => {
         if (!projectId) return;
+        if (!window.confirm("Are you sure you want to delete this project?")) return;
         try {
             const projectRef = doc(db, "projects", projectId);
             await deleteDoc(projectRef);
@@ -125,186 +250,250 @@ export default function Projects() {
         }
     };
 
-    const cards = [
-        {
-            icon: <ClipboardPlus className="w-10 h-10 text-blue-500" />,
-            title: "Add Projects",
-            description:
-                "Create and organize projects effortlessly. Add project details, set start and end dates, and assign team members to keep everything structured.",
-        },
-        {
-            icon: <Flag className="w-10 h-10 text-green-500" />,
-            title: "Add Milestones & Tasks",
-            description:
-                "Break down your project into milestones and specific tasks. Assign deadlines and responsibilities for better tracking and accountability.",
-        },
-        {
-            icon: <BarChart3 className="w-10 h-10 text-purple-500" />,
-            title: "Track Progress",
-            description:
-                "Monitor your project's performance using visual progress bars and insights. Stay on top of milestones and ensure timely completion.",
-        },
-    ];
+    const filteredProjects = projects.filter(p =>
+        p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // --- Theme Helpers ---
+    const getTypeStyles = (type) => {
+        switch (type) {
+            case 'Capstone':
+                return {
+                    border: 'hover:border-violet-300',
+                    badge: 'bg-violet-100 text-violet-700',
+                    iconBg: 'bg-violet-50 text-violet-600',
+                    titleHover: 'group-hover:text-violet-700',
+                    button: 'hover:border-violet-300 hover:text-violet-700',
+                    accent: 'bg-violet-500'
+                };
+            case 'Community':
+                return {
+                    border: 'hover:border-emerald-300',
+                    badge: 'bg-emerald-100 text-emerald-700',
+                    iconBg: 'bg-emerald-50 text-emerald-600',
+                    titleHover: 'group-hover:text-emerald-700',
+                    button: 'hover:border-emerald-300 hover:text-emerald-700',
+                    accent: 'bg-emerald-500'
+                };
+            case 'Research':
+            default:
+                return {
+                    border: 'hover:border-blue-300',
+                    badge: 'bg-blue-100 text-blue-700',
+                    iconBg: 'bg-blue-50 text-blue-600',
+                    titleHover: 'group-hover:text-blue-700',
+                    button: 'hover:border-blue-300 hover:text-blue-700',
+                    accent: 'bg-blue-500'
+                };
+        }
+    };
 
     return (
-        <>
-            <div className="min-h-screen bg-gradient-to-b from-blue-100 to-blue-50 text-slate-900">
-                <div className="max-w-7xl mx-auto px-6 py-10">
-                    <header className="mb-6 text-center mt-9">
-                        <h1 className="text-5xl font-extrabold">
-                            Manage Your <br />
-                            <span className="text-blue-600">Projects</span>
-                        </h1>
-                        <p className="text-slate-600 mt-2 text-xl pt-2">
-                            Start a new project or manage your existing ones. Projects are visible to all members involved.
-                        </p>
-                    </header>
+        <div className="min-h-screen bg-[#F0F4FA] font-sans text-slate-800 pb-20 pt-8">
+            <main className="max-w-7xl mx-auto px-6">
 
-                    {/* Top feature cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-6 max-w-6xl mx-auto mt-20">
-                        {cards.map((card, index) => {
-                            const isLast = index === cards.length - 1;
-                            const containerClass = isLast
-                                ? "cursor-pointer bg-gradient-to-r from-blue-600 to-sky-400 p-6 rounded-2xl shadow-xl hover:shadow-2xl transition text-white flex flex-col justify-between"
-                                : "cursor-pointer bg-gradient-to-r from-white to-blue-50 p-6 rounded-2xl shadow-xl hover:shadow-2xl transition flex flex-col justify-between";
-                            const icon = isLast
-                                ? React.cloneElement(card.icon, { className: "w-10 h-10 text-white" })
-                                : card.icon;
-                            const titleClass = isLast ? "text-2xl font-bold mb-2 text-white" : "text-2xl font-bold mb-2 text-blue-700";
-                            const descClass = isLast ? "text-white/90" : "text-gray-600";
-                            return (
-                                <motion.div
-                                    key={index}
-                                    whileHover={{ scale: 1.05, rotate: 1 }}
-                                    transition={{ type: "spring", stiffness: 200, damping: 10 }}
-                                    className={containerClass}
-                                >
-                                    <div>
-                                        <div className="flex justify-center mb-4">{icon}</div>
-                                        <h3 className={titleClass}>{card.title}</h3>
-                                        <p className={descClass}>{card.description}</p>
-                                    </div>
-                                    {isLast && (
-                                        <div className="mt-4 self-end">
-                                            <span className="inline-block px-3 py-2 bg-white/20 text-white rounded-lg font-semibold shadow">Explore Topics</span>
-                                        </div>
-                                    )}
-                                </motion.div>
-                            );
-                        })}
-                    </div>
-
-                    {/* Projects Section */}
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mt-20">
-                        {/* Add New Project */}
-                        <div className="lg:col-span-1">
-                            <div className="bg-white rounded-xl p-5 shadow-md flex flex-col justify-between border border-gray-200 hover:shadow-lg transition h-[240px] w-full">
-                                <h1 className="text-lg font-semibold text-center text-gray-800">Add Your Projects</h1>
-                                <div className="mt-4">
-                                    <button
-                                        onClick={() => setIsOpen(true)}
-                                        className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-sky-500 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
-                                    >
-                                        + Add New Project
-                                    </button>
-                                </div>
-                            </div>
+                {/* Hero Section */}
+                <div className="flex flex-col lg:flex-row items-center justify-between gap-12 mb-16 mt-8">
+                    <div className="flex-1 max-w-2xl space-y-6">
+                        <div>
+                            <span className="inline-block py-1 px-3 rounded-full bg-blue-100 text-blue-600 text-xs font-bold tracking-wide uppercase mb-3">
+                                Workspace
+                            </span>
+                            <h1 className="text-5xl lg:text-7xl font-extrabold text-slate-900 leading-[1.1]">
+                                Manage Your <br />
+                                <span className="text-blue-600">Projects</span>
+                            </h1>
                         </div>
 
-                        {/* My Projects */}
-                        <section className="lg:col-span-3">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="font-semibold text-2xl text-center text-blue-700 w-full">My Projects</h3>
+                        <p className="text-xl text-slate-500 leading-relaxed max-w-lg">
+                            Start a new project or manage your existing ones. Keep your team aligned and your goals in sight.
+                        </p>
+
+                        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-xl pt-4">
+                            <div className="relative flex-grow group">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <Search className="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Search projects..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full pl-11 pr-4 py-4 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none shadow-sm text-slate-700 placeholder-slate-400"
+                                />
                             </div>
-
-                            <div className="space-y-6">
-                                {projects.length === 0 && (
-                                    <div className="bg-gray-50 p-6 rounded-xl shadow-md text-gray-600 text-center border border-gray-200">
-                                        No projects yet — create or join one using your registered email.
-                                    </div>
-                                )}
-
-
-                                {projects.map((p) => (
-                                    <motion.article
-                                        key={p.id}
-                                        whileHover={{ scale: 1.03 }}
-                                        className=" bg-gradient-to-r from-blue-600 to-sky-500 text-white border border-gray-200 rounded-2xl p-6 shadow-md hover:shadow-lg transition-all duration-300"
-                                    >
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1 ">
-                                                <div className="flex items-center gap-2 mb-3">
-                                                    <span className="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full font-medium">{p.type}</span>
-                                                    <span className="text-xs text-white  font-medium">{p.year}</span>
-                                                </div>
-                                                <h4 className="text-2xl font-bold text-white  mb-3 text-center">{p.title}</h4>
-                                                <p className="text-sm mb-4 text-black  leading-relaxed bg-gray-100 p-3 rounded-md">{p.description}</p>
-                                                <div className="grid grid-cols-2 gap-4 text-sm text-white ">
-                                                    <p><strong>Supervisor:</strong> {p.supervisorEmail || '-'}</p>
-                                                    <p><strong>Mentor:</strong> {p.mentorEmail || '-'}</p>
-                                                    <p><strong>Leader:</strong> {p.leaderEmail || '-'}</p>
-                                                    <p><strong>Team:</strong> {(p.team || []).join(', ') || '-'}</p>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex flex-col items-end gap-3">
-                                                <button
-                                                    onClick={() => navigate(`/projects/${p.id}`)}
-                                                    className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
-                                                >
-                                                    Open
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(p.id)}
-                                                    className="px-4 py-2 text-white border border-red-600 rounded-lg bg-red-600 hover:bg-red-50 transition text-sm"
-                                                >
-                                                    Delete
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </motion.article>
-                                ))}
-
-                            </div>
-                        </section>
+                            <button
+                                onClick={() => setIsOpen(true)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-95 flex items-center justify-center gap-2"
+                            >
+                                <Plus className="w-5 h-5" />
+                                <span className="whitespace-nowrap">New Project</span>
+                            </button>
+                        </div>
                     </div>
 
+                    <div className="flex-1 w-full max-w-lg">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.8 }}
+                            className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-blue-50 to-white border-4 border-white"
+                        >
+                            <img
+                                src="https://img.freepik.com/free-vector/scrum-method-concept-illustration_114360-10060.jpg"
+                                alt="Project Management"
+                                className="object-cover w-full h-full mix-blend-multiply opacity-90"
+                                onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.parentElement.innerHTML = '<div class="absolute inset-0 flex items-center justify-center text-blue-200"><svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg></div>';
+                                }}
+                            />
+                        </motion.div>
+                    </div>
                 </div>
-            </div>
+
+                {/* Projects Grid Section */}
+                <div className="mb-12">
+                    <div className="flex items-end justify-between mb-6 pb-2 border-b border-slate-200/60">
+                        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                            <Layout className="w-6 h-6 text-slate-400" />
+                            Your Projects
+                        </h2>
+                        <div className="text-slate-400 text-sm font-medium bg-white px-3 py-1 rounded-full border border-slate-100 shadow-sm">
+                            {filteredProjects.length} Active
+                        </div>
+                    </div>
+
+                    {projects.length === 0 ? (
+                        <div className="text-center py-24 bg-white/50 rounded-3xl border border-dashed border-slate-300">
+                            <div className="w-20 h-20 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <ClipboardPlus size={36} />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 mb-2">No projects found</h3>
+                            <p className="text-slate-500 max-w-sm mx-auto mb-8">You haven't created or joined any projects yet. Start by adding one!</p>
+                            <button onClick={() => setIsOpen(true)} className="text-blue-600 font-bold hover:underline">
+                                + Create First Project
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            <AnimatePresence>
+                                {filteredProjects.map((p) => (
+                                    <ProjectCard
+                                        key={p.id}
+                                        project={p}
+                                        getTypeStyles={getTypeStyles}
+                                        navigate={navigate}
+                                        handleDelete={handleDelete}
+                                    />
+                                ))}
+                            </AnimatePresence>
+                        </div>
+                    )}
+                </div>
+            </main>
 
             {/* Modal */}
-            {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    <div className="absolute inset-0 bg-black/40" onClick={() => setIsOpen(false)} />
-                    <div className="relative bg-white rounded-xl p-6 w-full max-w-2xl shadow-xl">
-                        <h3 className="text-lg font-semibold mb-3">Add New Project</h3>
-                        <form onSubmit={handleCreate} className="space-y-3" autoComplete="off">
-                            <input name="title" value={form.title} onChange={handleChange} placeholder="Project title" className="w-full px-3 py-2 border rounded-md" required />
-                            <input type="email" name="supervisorEmail" value={form.supervisorEmail} onChange={handleChange} placeholder="Supervisor Email" className="w-full px-3 py-2 border rounded-md" />
-                            <input type="email" name="mentorEmail" value={form.mentorEmail} onChange={handleChange} placeholder="Mentor Email" className="w-full px-3 py-2 border rounded-md" />
-                            <input type="email" name="leaderEmail" value={form.leaderEmail} onChange={handleChange} placeholder="Team Leader Email" className="w-full px-3 py-2 border rounded-md" />
-                            <input type="text" name="team" value={form.team} onChange={handleChange} placeholder="Team members emails (comma separated)" className="w-full px-3 py-2 border rounded-md" />
-                            <textarea name="description" value={form.description} onChange={handleChange} placeholder="Short description" className="w-full px-3 py-2 border rounded-md h-28" />
-                            <div className="flex items-center gap-2">
-                                <input name="year" value={form.year} onChange={handleChange} className="px-3 py-2 border rounded-md w-24" />
-                                <select name="type" value={form.type} onChange={handleChange} className="px-3 py-2 border rounded-md">
-                                    <option>Research</option>
-                                    <option>Capstone</option>
-                                    <option>Community</option>
-                                </select>
-                            </div>
-                            <div className="flex items-center justify-end gap-2 mt-2">
-                                <button type="button" onClick={() => setIsOpen(false)} className="px-4 py-2 border rounded-md">
-                                    Cancel
-                                </button>
-                                <button type="submit" className="px-4 py-2 bg-gradient-to-r from-sky-500 to-sky-400 text-white rounded-md">
-                                    Add Project
+            <AnimatePresence>
+                {isOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                            onClick={() => setIsOpen(false)}
+                        />
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            className="relative bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden"
+                        >
+                            <div className="px-8 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                <h3 className="text-xl font-bold text-slate-800">New Project</h3>
+                                <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-slate-600 transition">
+                                    ✕
                                 </button>
                             </div>
-                        </form>
+
+                            <form onSubmit={handleCreate} className="p-8 space-y-6">
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">Project Title</label>
+                                    <input
+                                        name="title"
+                                        value={form.title}
+                                        onChange={handleChange}
+                                        placeholder="E.g., AI Research Assistant"
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none font-medium"
+                                        required
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Team Leadership</label>
+                                        <div className="space-y-3">
+                                            <input type="email" name="supervisorEmail" value={form.supervisorEmail} onChange={handleChange} placeholder="Supervisor Email" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none text-sm" />
+                                            <input type="email" name="mentorEmail" value={form.mentorEmail} onChange={handleChange} placeholder="Mentor Email" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none text-sm" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Composition</label>
+                                        <div className="space-y-3">
+                                            <input type="email" name="leaderEmail" value={form.leaderEmail} onChange={handleChange} placeholder="Leader Email" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none text-sm" />
+                                            <input type="text" name="team" value={form.team} onChange={handleChange} placeholder="Members (comma separated)" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none text-sm" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">Description</label>
+                                    <textarea
+                                        name="description"
+                                        value={form.description}
+                                        onChange={handleChange}
+                                        placeholder="What is this project about?"
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none min-h-[100px] text-sm"
+                                    />
+                                </div>
+
+                                <div className="flex items-center gap-5">
+                                    <div className="w-32">
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">Year</label>
+                                        <input name="year" value={form.year} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none font-medium" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">Type</label>
+                                        <select name="type" value={form.type} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none font-medium">
+                                            <option>Research</option>
+                                            <option>Capstone</option>
+                                            <option>Community</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 mt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsOpen(false)}
+                                        className="px-6 py-3 border border-slate-300 rounded-xl text-slate-700 font-bold hover:bg-slate-50 transition"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg hover:bg-blue-700 hover:shadow-xl transition transform active:scale-95"
+                                    >
+                                        Create Project
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
                     </div>
-                </div>
-            )}
-        </>
+                )}
+            </AnimatePresence>
+        </div>
     );
 }
