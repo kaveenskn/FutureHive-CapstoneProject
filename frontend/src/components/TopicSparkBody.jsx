@@ -2,10 +2,14 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const TopicSparkBody = () => {
-  const TRENDING_PAGE_SIZE = 12;
+  const TRENDING_PAGE_SIZE = 10;
   const SEARCH_PAGE_SIZE = 12;
   const MIN_FILTER_RESULTS = 9;
   const AUTO_FILL_MAX_ATTEMPTS = 3;
+
+  const TRENDING_CACHE_PREFIX = "futurehive:topicspark:trending:v1:";
+  const SEARCH_CACHE_PREFIX = "futurehive:topicspark:search:v1:";
+  const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
   const [selectedType, setSelectedType] = useState("all");
   const [projects, setProjects] = useState([]);
@@ -15,10 +19,32 @@ const TopicSparkBody = () => {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [expandedById, setExpandedById] = useState({});
   const navigate = useNavigate();
 
   const autoFillRef = useRef({ key: "", attempts: 0, inFlight: false });
   const requestRef = useRef({ id: 0, controller: null });
+
+  const readCache = (key) => {
+    try {
+      const raw = sessionStorage.getItem(key);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed.ts !== "number" || !Array.isArray(parsed.projects)) return null;
+      if (Date.now() - parsed.ts > CACHE_TTL_MS) return null;
+      return parsed;
+    } catch {
+      return null;
+    }
+  };
+
+  const writeCache = (key, projects, hasMore) => {
+    try {
+      sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), projects, hasMore: !!hasMore }));
+    } catch {
+      // ignore
+    }
+  };
 
   const beginRequest = () => {
     // Cancel any in-flight request so older responses can't overwrite newer UI state.
@@ -40,13 +66,24 @@ const TopicSparkBody = () => {
     { id: "capstone", label: "Capstone" },
   ];
 
+  const stripIdeaPrefix = (title = "") =>
+    String(title)
+      .replace(/^\s*(research project idea|software project idea)\s*:\s*/i, "")
+      .trim();
+
+  const normalizeCachedProjects = (items = []) =>
+    (Array.isArray(items) ? items : []).map((p) => ({
+      ...p,
+      title: stripIdeaPrefix(p?.title) || p?.title || "Untitled",
+    }));
+
   // ⚙️ Helper function to map topic data
   const mapTopics = (topics = [], pageNumber = 1) =>
     topics.map((t, idx) => ({
       id:
         t.id ||
         encodeURIComponent((t.title || "") + "-" + String(pageNumber) + "-" + idx),
-      title: t.title || "Untitled",
+      title: stripIdeaPrefix(t.title) || "Untitled",
       description: t.description || "",
       type: t.type
         ? String(t.type).charAt(0).toUpperCase() + String(t.type).slice(1)
@@ -56,12 +93,19 @@ const TopicSparkBody = () => {
     }));
 
   // ✅ Fetch all topics (with pagination)
-  const fetchTopics = async (pageNumber = 1, append = false, typeOverride = null) => {
+  const fetchTopics = async (
+    pageNumber = 1,
+    append = false,
+    typeOverride = null,
+    options = {}
+  ) => {
     const { id, signal } = beginRequest();
-    setLoading(true);
+    const silent = !!options.silent;
+    if (!silent) setLoading(true);
     try {
       const effectiveType =
         typeOverride && typeOverride !== "all" ? String(typeOverride).toLowerCase() : "";
+      const cacheKey = `${TRENDING_CACHE_PREFIX}${effectiveType || "all"}`;
       const typeParam = effectiveType ? `&type=${encodeURIComponent(effectiveType)}` : "";
       const res = await fetch(
         `http://127.0.0.1:8000/topicspark?page=${pageNumber}&limit=${TRENDING_PAGE_SIZE}${typeParam}`,
@@ -74,6 +118,9 @@ const TopicSparkBody = () => {
 
       setHasMore(mapped.length >= TRENDING_PAGE_SIZE);
       setProjects((prev) => (append ? [...prev, ...mapped] : mapped));
+      if (pageNumber === 1 && !append) {
+        writeCache(cacheKey, mapped, mapped.length >= TRENDING_PAGE_SIZE);
+      }
     } catch (e) {
       if (e?.name === "AbortError") return;
       console.error("Error fetching topics:", e);
@@ -89,16 +136,20 @@ const TopicSparkBody = () => {
     pageNumber = 1,
     append = false,
     q = "",
-    typeOverride = null
+    typeOverride = null,
+    options = {}
   ) => {
     const trimmed = String(q || "").trim();
     if (!trimmed) return;
 
     const { id, signal } = beginRequest();
-    setLoading(true);
+    const silent = !!options.silent;
+    if (!silent) setLoading(true);
     try {
       const effectiveType =
         typeOverride && typeOverride !== "all" ? String(typeOverride).toLowerCase() : "";
+
+      const cacheKey = `${SEARCH_CACHE_PREFIX}${encodeURIComponent(trimmed)}|${effectiveType || "all"}`;
 
       const res = await fetch("http://127.0.0.1:8000/topicspark/search", {
         method: "POST",
@@ -119,6 +170,9 @@ const TopicSparkBody = () => {
         if (requestRef.current.id !== id || signal.aborted) return;
         setHasMore(mapped.length >= SEARCH_PAGE_SIZE);
         setProjects((prev) => (append ? [...prev, ...mapped] : mapped));
+        if (pageNumber === 1 && !append) {
+          writeCache(cacheKey, mapped, mapped.length >= SEARCH_PAGE_SIZE);
+        }
       } else {
         if (requestRef.current.id !== id || signal.aborted) return;
         setHasMore(false);
@@ -137,7 +191,18 @@ const TopicSparkBody = () => {
     setMode("trending");
     setPage(1);
     setHasMore(true);
-    fetchTopics(1, false);
+
+    const cacheKey = `${TRENDING_CACHE_PREFIX}all`;
+    const cached = readCache(cacheKey);
+    if (cached?.projects?.length) {
+      setProjects(normalizeCachedProjects(cached.projects));
+      setHasMore(!!cached.hasMore);
+      // Refresh silently so returning to this page doesn't show loading again.
+      fetchTopics(1, false, null, { silent: true });
+    } else {
+      fetchTopics(1, false);
+    }
+
     return () => {
       try {
         requestRef.current.controller?.abort();
@@ -155,6 +220,18 @@ const TopicSparkBody = () => {
     setMode("search");
     setPage(1);
     setHasMore(true);
+
+    const effectiveType =
+      selectedType && selectedType !== "all" ? String(selectedType).toLowerCase() : "";
+    const cacheKey = `${SEARCH_CACHE_PREFIX}${encodeURIComponent(trimmed)}|${effectiveType || "all"}`;
+    const cached = readCache(cacheKey);
+    if (cached?.projects?.length) {
+      setProjects(normalizeCachedProjects(cached.projects));
+      setHasMore(!!cached.hasMore);
+      await fetchSearch(1, false, trimmed, selectedType, { silent: true });
+      return;
+    }
+
     await fetchSearch(1, false, trimmed, selectedType);
   };
 
@@ -208,6 +285,12 @@ const TopicSparkBody = () => {
 
     navigate("/chat", { state: { paper: project, source: "topicspark" } });
 
+  };
+
+  const isLongDescription = (text) => String(text || "").trim().length > 160;
+
+  const toggleExpanded = (id) => {
+    setExpandedById((prev) => ({ ...prev, [id]: !prev?.[id] }));
   };
 
   return (
@@ -345,9 +428,25 @@ const TopicSparkBody = () => {
                   <h3 className="text-lg font-semibold mb-1 text-slate-900">
                     {project.title}
                   </h3>
-                  <p className="text-sm text-slate-700 mb-6 line-clamp-3">
-                    {project.description}
-                  </p>
+                  <div className="mb-6">
+                    <p
+                      className={`text-sm text-slate-700 ${
+                        expandedById[project.id] ? "" : "line-clamp-3"
+                      }`}
+                    >
+                      {project.description}
+                    </p>
+
+                    {isLongDescription(project.description) && (
+                      <button
+                        type="button"
+                        onClick={() => toggleExpanded(project.id)}
+                        className="mt-2 text-sm font-semibold text-blue-600 hover:underline"
+                      >
+                        {expandedById[project.id] ? "Show less" : "Show more"}
+                      </button>
+                    )}
+                  </div>
 
                   <div className="mt-2 flex justify-end">
                     <button

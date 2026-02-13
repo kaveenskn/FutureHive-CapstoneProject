@@ -6,6 +6,7 @@ import os
 import asyncio
 import random
 from pathlib import Path
+from typing import Literal
 
 def _read_gemini_api_key() -> str | None:
     """Read GEMINI_API_KEY reliably.
@@ -167,6 +168,83 @@ async def _generate_with_retry(prompt: str, *, models: list[str]) -> str:
         raise last_error
     raise RuntimeError("Failed to generate content")
 
+
+def _intent_from_question(question: str) -> Literal["benefits", "drawbacks", "mixed", "generic"]:
+    q = (question or "").strip().lower()
+    if not q:
+        return "generic"
+
+    benefits = ["benefit", "benefits", "advantage", "advantages", "pros", "strength", "strengths"]
+    drawbacks = ["drawback", "drawbacks", "limitation", "limitations", "cons", "weakness", "weaknesses", "challenges"]
+
+    has_benefits = any(w in q for w in benefits)
+    has_drawbacks = any(w in q for w in drawbacks)
+
+    if has_benefits and has_drawbacks:
+        return "mixed"
+    if has_benefits:
+        return "benefits"
+    if has_drawbacks:
+        return "drawbacks"
+    return "generic"
+
+
+def _clean_structured_answer(answer: str, *, question: str | None = None) -> str:
+    """Normalize model output into simple, organized plain text.
+
+    - Removes markdown headings/fences
+    - Avoids echoing the question (e.g., "drawbacks")
+    - Keeps bullets + short lines
+    """
+
+    text = (answer or "").strip()
+    if not text:
+        return text
+
+    # Remove fenced code blocks.
+    text = re.sub(r"```.*?```", " ", text, flags=re.S)
+
+    # Drop leading echo of the question (common for single-word questions like "drawbacks").
+    q = (question or "").strip()
+    if q:
+        q_low = q.lower()
+        # Compare only the first non-empty line.
+        first_line = next((ln.strip() for ln in text.splitlines() if ln.strip()), "")
+        fl = first_line.lower().rstrip(":")
+        if fl == q_low or fl == q_low.rstrip("?"):
+            text = "\n".join(text.splitlines()[1:]).strip()
+
+    # Remove markdown headings like ###, #### etc.
+    cleaned_lines: list[str] = []
+    for ln in text.splitlines():
+        s = ln.strip()
+        if not s:
+            continue
+        s = re.sub(r"^#{1,6}\s*", "", s).strip()
+        cleaned_lines.append(s)
+
+    text = "\n".join(cleaned_lines)
+
+    # Remove bold/italic markers.
+    text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
+    text = re.sub(r"__(.*?)__", r"\1", text)
+    text = re.sub(r"\*(.*?)\*", r"\1", text)
+
+    # Normalize bullets: turn numbered items into '-'.
+    normalized: list[str] = []
+    for ln in text.splitlines():
+        s = ln.strip()
+        s = re.sub(r"^\d+\)\s+", "- ", s)
+        s = re.sub(r"^\d+\.\s+", "- ", s)
+        s = re.sub(r"^[•*]\s+", "- ", s)
+        normalized.append(s)
+
+    # Collapse repeated whitespace.
+    out = "\n".join(normalized)
+    out = re.sub(r"[ \t]+", " ", out)
+    out = re.sub(r"\n{3,}", "\n\n", out).strip()
+    return out
+
 # --- FastAPI setup ---
 app = FastAPI()
 
@@ -200,29 +278,70 @@ async def ask_ai(request: Request):
     if "year" in q_text or "published" in q_text or ("when" in q_text and "publish" in q_text):
         return {"answer": f"Year: {year or 'Not provided'}"}
 
+    intent = _intent_from_question(question)
+    if intent == "drawbacks":
+        format_rules = """Return ONLY this format:
+Drawbacks:
+- <short bullet>
+- <short bullet>
+- <short bullet>
+"""
+    elif intent == "benefits":
+        format_rules = """Return ONLY this format:
+Benefits:
+- <short bullet>
+- <short bullet>
+- <short bullet>
+"""
+    elif intent == "mixed":
+        format_rules = """Return ONLY this format:
+Benefits:
+- <short bullet>
+- <short bullet>
+
+Drawbacks:
+- <short bullet>
+- <short bullet>
+"""
+    else:
+        format_rules = """Return ONLY this format:
+Answer:
+- <short bullet>
+- <short bullet>
+- <short bullet>
+"""
+
     prompt = f"""
-You are an academic assistant that gives short, insightful answers.
+You are an academic assistant.
 
-Given the information below, read it carefully and answer the question directly and concisely.
-Avoid long structured sections like "summary", "strengths", etc.
-Write 3–5 clear sentences that sound natural and professional.
+Use ONLY the provided information. If the information is insufficient, say so briefly as a bullet.
 
+STYLE:
+- English only
+- Plain text only (no Markdown headings like '###', no tables)
+- No long paragraphs
+- 3 to 6 bullets total
+- Each bullet <= 18 words
+- Do NOT repeat the question
+
+FORMAT:
+{format_rules}
+
+CONTENT:
 Title: {topic}
 Year: {year}
 Authors: {authors}
 Abstract: {abstract}
 
 Question: {question}
-
-Answer:
-"""
+""".strip()
 
     try:
         answer = await _generate_with_retry(
             prompt,
             models=["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.5-pro"],
         )
-        return {"answer": answer}
+        return {"answer": _clean_structured_answer(answer, question=question)}
     except Exception as e:
         return {"error": _humanize_genai_error(e), "details": str(e)}
 
@@ -238,28 +357,69 @@ async def ask_topicspark(request: Request):
     if not (topic or abstract):
         return {"error": "No topic or abstract provided"}
 
+    intent = _intent_from_question(question)
+    if intent == "drawbacks":
+        format_rules = """Return ONLY this format:
+Drawbacks:
+- <short bullet>
+- <short bullet>
+- <short bullet>
+"""
+    elif intent == "benefits":
+        format_rules = """Return ONLY this format:
+Benefits:
+- <short bullet>
+- <short bullet>
+- <short bullet>
+"""
+    elif intent == "mixed":
+        format_rules = """Return ONLY this format:
+Benefits:
+- <short bullet>
+- <short bullet>
+
+Drawbacks:
+- <short bullet>
+- <short bullet>
+"""
+    else:
+        format_rules = """Return ONLY this format:
+Answer:
+- <short bullet>
+- <short bullet>
+- <short bullet>
+"""
+
     prompt = f"""
-You are an academic assistant that gives short, practical answers.
+You are an academic assistant.
 
-Given the information below, answer the question directly and concisely.
-Avoid long structured sections like "summary", "strengths", etc.
-Write 3–5 clear sentences that sound natural and professional.
+Use ONLY the provided context. If the context is insufficient, say so briefly as a bullet.
 
+STYLE:
+- English only
+- Plain text only (no Markdown headings like '###', no tables)
+- No long paragraphs
+- 3 to 6 bullets total
+- Each bullet <= 18 words
+- Do NOT repeat the question
+
+FORMAT:
+{format_rules}
+
+CONTENT:
 Topic: {topic}
 Type: {type_}
 Context/Abstract: {abstract}
 
 Question: {question}
-
-Answer:
-"""
+""".strip()
 
     try:
         answer = await _generate_with_retry(
             prompt,
             models=["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.5-pro"],
         )
-        return {"answer": answer}
+        return {"answer": _clean_structured_answer(answer, question=question)}
     except Exception as e:
         return {"error": _humanize_genai_error(e), "details": str(e)}
 

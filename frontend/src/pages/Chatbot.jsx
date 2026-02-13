@@ -1,6 +1,24 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
+const sanitizeBotText = (text, userQuestion) => {
+  const raw = (text || "").toString();
+  const q = (userQuestion || "").trim();
+  if (!q) return raw.trim();
+
+  const lines = raw.split("\n");
+  const firstNonEmptyIndex = lines.findIndex((l) => l.trim().length > 0);
+  if (firstNonEmptyIndex === -1) return raw.trim();
+
+  const first = lines[firstNonEmptyIndex].trim().toLowerCase().replace(/[:?]+$/, "");
+  const qLow = q.toLowerCase().replace(/[:?]+$/, "");
+  if (first === qLow) {
+    lines.splice(firstNonEmptyIndex, 1);
+  }
+
+  return lines.join("\n").trim();
+};
+
 const Chatbot = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -13,6 +31,7 @@ const Chatbot = () => {
 
   const sendQuestion = async () => {
     if (!question.trim()) return;
+    const currentQuestion = question;
     const userMsg = { role: "user", text: question };
     setMessages((m) => [...m, userMsg]);
     setLoading(true);
@@ -47,7 +66,8 @@ const Chatbot = () => {
       });
 
       const data = await response.json();
-      const botMsg = { role: "bot", text: data.answer || "No answer." };
+      const botText = sanitizeBotText(data.answer || "No answer.", currentQuestion);
+      const botMsg = { role: "bot", text: botText };
       setMessages((m) => [...m, botMsg]);
     } catch (err) {
       setMessages((m) => [...m, { role: "bot", text: "Error contacting server." }]);
@@ -80,6 +100,14 @@ const Chatbot = () => {
     <div className="h-screen w-full flex flex-col bg-gradient-to-b from-blue-100 to-blue-50">
       <div className="flex-1 flex flex-col items-center px-4 md:px-6 py-6 md:py-8 min-h-0">
         <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg p-4 md:p-6 flex flex-col flex-1 min-h-0 overflow-hidden md:mb-6">
+          <div className="mb-3 md:mb-4">
+            <button
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              onClick={() => navigate(-1)}
+            >
+              Back to Projects
+            </button>
+          </div>
           <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-3 md:mb-4">Chat with AI</h2>
           <h3 className="text-lg md:text-xl font-semibold text-slate-700 mb-4 md:mb-6">{paper.title}</h3>
 
@@ -99,7 +127,7 @@ const Chatbot = () => {
                       : "bg-gray-200 text-gray-900"
                   }`}
                 >
-                  {m.text}
+                  <span className="whitespace-pre-wrap">{m.text}</span>
                 </div>
               </div>
             ))}
@@ -110,6 +138,13 @@ const Chatbot = () => {
               className="flex-1 p-2 md:p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                if (e.shiftKey) return;
+                if (e.nativeEvent?.isComposing) return;
+                e.preventDefault();
+                if (!loading) sendQuestion();
+              }}
               placeholder="Type your question..."
             />
             <button
