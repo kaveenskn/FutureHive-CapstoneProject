@@ -1,6 +1,8 @@
 import pandas as pd
 import math
 import os
+import threading
+import time
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
@@ -24,6 +26,34 @@ _DEBUG = str(os.getenv("DEBUG_PASTMONGO", "")).strip().lower() in {"1", "true", 
 def _debug(*parts):
     if _DEBUG:
         print("[pastMongo]", *parts, flush=True)
+
+
+_VECTOR_INIT_LOCK = threading.Lock()
+
+
+def _get_chroma_persist_dir() -> str:
+    # Keep this inside Backend/datas so it ships with the backend assets.
+    base_dir = os.getenv("PAST_CHROMA_DIR")
+    if base_dir and str(base_dir).strip():
+        return str(base_dir)
+    return os.path.join(os.path.dirname(__file__), "datas", "chroma_past")
+
+
+def _get_embedding_model_name() -> str:
+    # Default to a faster model to reduce query latency on CPU.
+    # You can override with e.g. sentence-transformers/all-mpnet-base-v2
+    name = os.getenv("PAST_EMBEDDING_MODEL")
+    if name and str(name).strip():
+        return str(name).strip()
+    return "sentence-transformers/all-MiniLM-L6-v2"
+
+
+def _safe_collection_count(vectorstore: Chroma) -> int | None:
+    try:
+        # LangChain's Chroma wrapper exposes the underlying chromadb collection.
+        return int(vectorstore._collection.count())  # type: ignore[attr-defined]
+    except Exception:
+        return None
 
 
 def _normalize_collection_type(value: str | None) -> str:
@@ -88,8 +118,9 @@ def _build_year_query(year):
 # -------------------------------------------------
 # GLOBAL RETRIEVERS (lazy initialized)
 # -------------------------------------------------
-retriever1 = None
-retriever2 = None
+_embeddings_model: HuggingFaceEmbeddings | None = None
+_research_vectorstore: Chroma | None = None
+_capstone_vectorstore: Chroma | None = None
 
 # -------------------------------------------------
 # MongoDB loaders (SAFE)
@@ -102,17 +133,15 @@ def load_collections():
     research_docs = list(collection1.find())
     capstone_docs = list(collection2.find())
 
-    # 🔍 DEBUG PRINTS
-    print("---- MongoDB Data Fetch Debug ----")
-    print(f"Research projects count: {len(research_docs)}")
-    print(f"Capstone projects count: {len(capstone_docs)}")
-
-    if research_docs:
-        print("Sample Research Document:", research_docs[0])
-
-    if capstone_docs:
-        print("Sample Capstone Document:", capstone_docs[0])
-    print("--------------------------------")
+    if _DEBUG:
+        print("---- MongoDB Data Fetch Debug ----")
+        print(f"Research projects count: {len(research_docs)}")
+        print(f"Capstone projects count: {len(capstone_docs)}")
+        if research_docs:
+            print("Sample Research Document:", research_docs[0])
+        if capstone_docs:
+            print("Sample Capstone Document:", capstone_docs[0])
+        print("--------------------------------")
 
     return research_docs, capstone_docs
 # -------------------------------------------------
@@ -181,39 +210,65 @@ def _lookup_doc_by_id(db, oid_str: str, preferred_collection: str | None = None)
 # Vectorstore Initialization (LAZY)
 # -------------------------------------------------
 def initialize_vectorstores():
-    global retriever1, retriever2
+    global _embeddings_model, _research_vectorstore, _capstone_vectorstore
 
-    if retriever1 is not None and retriever2 is not None:
+    if _research_vectorstore is not None and _capstone_vectorstore is not None and _embeddings_model is not None:
         return
 
-    research_docs, capstone_docs = load_collections()
+    with _VECTOR_INIT_LOCK:
+        if _research_vectorstore is not None and _capstone_vectorstore is not None and _embeddings_model is not None:
+            return
 
-    documents = convert_to_documents(research_docs)
-    # Tag each document with its source collection (helps downstream type detection)
-    for d in documents:
-        d.metadata["collection"] = "research"
+        persist_dir = _get_chroma_persist_dir()
+        os.makedirs(persist_dir, exist_ok=True)
 
-    capstone_documents = convert_to_documents(capstone_docs)
-    for d in capstone_documents:
-        d.metadata["collection"] = "capstone"
+        model_name = _get_embedding_model_name()
+        _debug("Initializing embeddings", "model=", model_name)
+        _embeddings_model = HuggingFaceEmbeddings(model_name=model_name)
 
-    embeddings_model = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-mpnet-base-v2"
-    )
+        # Try to load existing persisted collections first (fast path).
+        _debug("Loading Chroma", "dir=", persist_dir)
+        _research_vectorstore = Chroma(
+            collection_name="researchprojects_database",
+            embedding_function=_embeddings_model,
+            persist_directory=persist_dir,
+        )
+        _capstone_vectorstore = Chroma(
+            collection_name="capstoneprojects_database",
+            embedding_function=_embeddings_model,
+            persist_directory=persist_dir,
+        )
 
-    research_vectorstore = Chroma.from_documents(
-        documents=documents,
-        embedding=embeddings_model,
-        collection_name="researchprojects_database"
-    )
-    retriever1 = research_vectorstore.as_retriever(search_kwargs={"k": 10})
+        research_count = _safe_collection_count(_research_vectorstore)
+        capstone_count = _safe_collection_count(_capstone_vectorstore)
+        _debug("Chroma counts", "research=", research_count, "capstone=", capstone_count)
 
-    capstone_vectorstore = Chroma.from_documents(
-        documents=capstone_documents,
-        embedding=embeddings_model,
-        collection_name="capstoneprojects_database"
-    )
-    retriever2 = capstone_vectorstore.as_retriever(search_kwargs={"k": 10})
+        needs_build = (research_count in (None, 0)) or (capstone_count in (None, 0))
+        if not needs_build:
+            return
+
+        # Slow path: build and persist if missing.
+        start = time.time()
+        research_docs, capstone_docs = load_collections()
+        documents = convert_to_documents(research_docs)
+        for d in documents:
+            d.metadata["collection"] = "research"
+
+        capstone_documents = convert_to_documents(capstone_docs)
+        for d in capstone_documents:
+            d.metadata["collection"] = "capstone"
+
+        if research_count in (None, 0):
+            _debug("Building research Chroma index", "docs=", len(documents))
+            _research_vectorstore.add_documents(documents)
+            _research_vectorstore.persist()
+
+        if capstone_count in (None, 0):
+            _debug("Building capstone Chroma index", "docs=", len(capstone_documents))
+            _capstone_vectorstore.add_documents(capstone_documents)
+            _capstone_vectorstore.persist()
+
+        _debug("Vectorstore build complete", "seconds=", round(time.time() - start, 2))
 
 # -------------------------------------------------
 # Helper Functions
@@ -295,70 +350,51 @@ def get_default_projects_paginated(collection_type="research", page=1, limit=12,
 
     return results, pagination
 
-def search_projects(user_query, collection_type="research"):
+def search_projects(user_query, collection_type="research", limit: int | None = None):
     initialize_vectorstores()
 
     normalized_type = _normalize_collection_type(collection_type)
+    safe_k = 10
+    if limit is not None:
+        try:
+            safe_k = int(limit)
+        except Exception:
+            safe_k = 10
+    safe_k = max(1, min(safe_k, 50))
 
+    _debug("POST /past/search", "type=", normalized_type, "k=", safe_k, "query=", str(user_query)[:120])
+
+    assert _research_vectorstore is not None
+    assert _capstone_vectorstore is not None
+
+    # Use scores when merging across collections.
+    docs: list[Document] = []
     if normalized_type == "all":
-        results = []
-        results.extend(retriever1.invoke(user_query))
-        results.extend(retriever2.invoke(user_query))
+        scored: list[tuple[Document, float]] = []
+        scored.extend(_research_vectorstore.similarity_search_with_score(user_query, k=safe_k))
+        scored.extend(_capstone_vectorstore.similarity_search_with_score(user_query, k=safe_k))
+        scored.sort(key=lambda pair: pair[1])
+        docs = [d for d, _s in scored[:safe_k]]
     elif normalized_type == "capstone":
-        results = retriever2.invoke(user_query)
+        docs = _capstone_vectorstore.similarity_search(user_query, k=safe_k)
     else:
-        results = retriever1.invoke(user_query)
+        docs = _research_vectorstore.similarity_search(user_query, k=safe_k)
 
-    formatted_results = []
-    db = get_db()
-    _debug("POST /past/search", "type=", normalized_type, "query=", str(user_query)[:120])
-    for doc in results:
+    formatted_results: list[dict] = []
+    for doc in docs:
         metadata = doc.metadata or {}
-
-        # Determine type from metadata if present; fallback to request type.
-        result_type = normalized_type
         meta_collection = metadata.get("collection")
+        result_type = normalized_type
         if isinstance(meta_collection, str) and meta_collection.lower() in {"capstone", "research"}:
             result_type = meta_collection.lower()
-        elif normalized_type == "all":
-            # If collection metadata is missing, infer it by looking up the _id.
-            _found_doc, found_collection = _lookup_doc_by_id(db, metadata.get("_id", ""))
-            if found_collection == "Capstone_projects":
-                result_type = "capstone"
-            elif found_collection == "Past_Research_projects":
-                result_type = "research"
-
-        # Always rehydrate the author from Mongo by _id (vectorstore metadata can be stale).
-        hydrated_author = None
-        try:
-            preferred = None
-            if result_type == "capstone":
-                preferred = "Capstone_projects"
-            elif result_type == "research":
-                preferred = "Past_Research_projects"
-
-            source_doc, _src = _lookup_doc_by_id(db, metadata.get("_id", ""), preferred_collection=preferred)
-            if source_doc is not None:
-                hydrated_author = _first_present(source_doc, ["author", "Author", "authors", "Authors"], "")
-        except Exception:
-            hydrated_author = None
-
-        _debug(
-            "search hit",
-            "id=", metadata.get("_id", ""),
-            "type=", result_type,
-            "title=", metadata.get("title", ""),
-            "meta_author=", metadata.get("author", ""),
-            "hydrated_author=", hydrated_author,
-        )
 
         formatted_results.append({
             "title": metadata.get("title", ""),
-            "authors": hydrated_author if hydrated_author not in (None, "") else metadata.get("author", ""),
+            "authors": metadata.get("author", ""),
             "description": metadata.get("abstract", ""),
             "year": metadata.get("year", ""),
             "type": result_type,
-            "university": metadata.get("university", "Unknown University")
+            "university": metadata.get("university", "Unknown University"),
         })
 
     return formatted_results
@@ -408,11 +444,12 @@ def search_api():
         data = request.get_json()
         query = data.get("query", "")
         collection_type = _normalize_collection_type(data.get("type", "research"))
+        limit = data.get("limit", None)
 
         if not query:
             return jsonify({"error": "No query provided"}), 400
 
-        results = search_projects(query, collection_type)
+        results = search_projects(query, collection_type, limit=limit)
         return jsonify({"results": results}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

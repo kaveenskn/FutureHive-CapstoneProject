@@ -40,11 +40,16 @@ export default function ProjectDetails() {
             if (!projectData) return;
 
             // Determine role
+            const currentEmail = (currentUser.email || '').toLowerCase();
+            const supervisorEmail = (projectData.supervisorEmail || '').toLowerCase();
+            const mentorEmail = (projectData.mentorEmail || '').toLowerCase();
+            const leaderEmail = (projectData.leaderEmail || '').toLowerCase();
+            const teamEmails = (projectData.team || []).map((e) => (e || '').toLowerCase());
             let detectedRole = 'viewer';
-            if (projectData.supervisorEmail === currentUser.email) detectedRole = 'supervisor';
-            else if (projectData.mentorEmail === currentUser.email) detectedRole = 'mentor';
-            else if (projectData.leaderEmail === currentUser.email) detectedRole = 'leader';
-            else if ((projectData.team || []).includes(currentUser.email)) detectedRole = 'member';
+            if (supervisorEmail && supervisorEmail === currentEmail) detectedRole = 'supervisor';
+            else if (mentorEmail && mentorEmail === currentEmail) detectedRole = 'mentor';
+            else if (leaderEmail && leaderEmail === currentEmail) detectedRole = 'leader';
+            else if (teamEmails.includes(currentEmail)) detectedRole = 'member';
 
             setRole(detectedRole);
         });
@@ -144,8 +149,11 @@ export default function ProjectDetails() {
         }
     }
 
-    const canEdit =
+    // Leadership can manage milestones/tasks; members can only update task completion.
+    const canManage =
         role === 'supervisor' || role === 'mentor' || role === 'leader';
+    const canToggleTaskStatus =
+        role === 'supervisor' || role === 'mentor' || role === 'leader' || role === 'member';
 
     // Format Date Helper
     const formatDate = (dateString) => {
@@ -232,7 +240,7 @@ export default function ProjectDetails() {
                                             <div key={m.id} className="p-4 rounded-xl border border-slate-100 bg-slate-50/30 hover:bg-white hover:shadow-md transition group">
                                                 <div className="flex items-start justify-between mb-2">
                                                     <h4 className="font-semibold text-sm text-slate-800 line-clamp-2">{m.title}</h4>
-                                                    {canEdit && (
+                                                    {canManage && (
                                                         <button
                                                             onClick={() => deleteMilestone(m.id)}
                                                             className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-1"
@@ -256,7 +264,7 @@ export default function ProjectDetails() {
                                 )}
                             </div>
 
-                            {canEdit && (
+                            {canManage && (
                                 <div className="mt-6 pt-4 border-t border-slate-100">
                                     <div className="relative">
                                         <input
@@ -320,9 +328,23 @@ export default function ProjectDetails() {
                                                     >
                                                         <div className="flex items-center gap-3">
                                                             <button
-                                                                disabled={!canEdit}
-                                                                onClick={() => updateTaskStatus(m.id, t.id, t.status === 'done' ? 'todo' : 'done')}
-                                                                className={`transition-colors ${t.status === 'done' ? 'text-green-500' : 'text-slate-300 hover:text-blue-500'}`}
+                                                                disabled={!canToggleTaskStatus}
+                                                                onClick={() => {
+                                                                    if (!canToggleTaskStatus) return;
+                                                                    updateTaskStatus(m.id, t.id, t.status === 'done' ? 'todo' : 'done');
+                                                                }}
+                                                                className={`transition-colors ${
+                                                                    t.status === 'done'
+                                                                        ? 'text-green-500'
+                                                                        : canToggleTaskStatus
+                                                                            ? 'text-slate-300 hover:text-blue-500'
+                                                                            : 'text-slate-200 cursor-not-allowed'
+                                                                }`}
+                                                                title={
+                                                                    canToggleTaskStatus
+                                                                        ? (t.status === 'done' ? 'Mark as not done' : 'Mark as done')
+                                                                        : 'Only project members can update task status'
+                                                                }
                                                             >
                                                                 {t.status === 'done' ? (
                                                                     <CheckCircle2 size={20} className="fill-green-50" />
@@ -335,7 +357,7 @@ export default function ProjectDetails() {
                                                             </span>
                                                         </div>
 
-                                                        {canEdit && (
+                                                        {canManage && (
                                                             <div className="flex items-center gap-2 opacity-0 group-hover/task:opacity-100 transition-opacity">
                                                                 {t.status === 'todo' && (
                                                                     <button
@@ -361,7 +383,7 @@ export default function ProjectDetails() {
                                         </div>
 
                                         {/* Add Task Input */}
-                                        {canEdit && (
+                                        {canManage && (
                                             <div className="mt-3 pl-11">
                                                 <div className="relative max-w-md">
                                                     <input

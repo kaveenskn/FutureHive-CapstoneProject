@@ -294,7 +294,10 @@ const ResearchAssistant = () => {
                       </p>
 
                       <div className="flex items-center justify-between text-sm text-slate-500">
-                        <div>{result.university || "Unknown University"}</div>
+                        <div>
+                         
+                            Sabaragamuwa University Of SriLanka
+                        </div>
                         <div>{result.year}</div>
                       </div>
 

@@ -162,15 +162,16 @@ export default function Projects() {
 
     const fetchProjects = async (userEmail) => {
         if (!userEmail) return;
+        const normalizedEmail = userEmail.toLowerCase();
         try {
             const projectsRef = collection(db, "projects");
             const q = query(
                 projectsRef,
                 or(
-                    where("supervisorEmail", "==", userEmail),
-                    where("mentorEmail", "==", userEmail),
-                    where("leaderEmail", "==", userEmail),
-                    where("team", "array-contains", userEmail)
+                    where("supervisorEmail", "==", normalizedEmail),
+                    where("mentorEmail", "==", normalizedEmail),
+                    where("leaderEmail", "==", normalizedEmail),
+                    where("team", "array-contains", normalizedEmail)
                 )
             );
             const snapshot = await getDocs(q);
