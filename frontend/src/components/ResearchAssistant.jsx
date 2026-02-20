@@ -14,6 +14,10 @@ const ResearchAssistant = () => {
   const [results, setResults] = useState([]);
   const [filters, setFilters] = useState({ year: "all", type: "all" });
   const [bookmarks, setBookmarks] = useState([]);
+  const [showBookmarks, setShowBookmarks] = useState(false);
+
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   const mapTypeForBackend = (uiType) => {
     if (!uiType) return "research";
@@ -25,7 +29,7 @@ const ResearchAssistant = () => {
   useEffect(() => {
     const fetchDefault = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:5000/default");
+        const res = await fetch("http://127.0.0.1:5000/past/default?limit=100");
         if (res.ok) {
           const data = await res.json();
           setResults(data.results || []);
@@ -40,10 +44,10 @@ const ResearchAssistant = () => {
   const handleSearch = async () => {
     if (!query.trim()) return;
     try {
-      const res = await fetch("http://127.0.0.1:5000/search", {
+      const res = await fetch("http://127.0.0.1:5000/past/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, type: mapTypeForBackend(filters.type) }),
+        body: JSON.stringify({ query, type: mapTypeForBackend(filters.type), limit: 100 }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -87,16 +91,34 @@ const ResearchAssistant = () => {
     }
   };
 
+  const handleShowBookmarks = () => {
+    setShowBookmarks((prev) => !prev);
+  };
+
+  const bookmarkedResults = results.filter((r) => bookmarks.includes(makeKey(r)));
+
+  const activeResults = showBookmarks ? bookmarkedResults : filteredResults;
+
+  useEffect(() => {
+    setPage(1);
+  }, [query, filters, results, showBookmarks]);
+
+  const totalPages = Math.max(1, Math.ceil(activeResults.length / pageSize));
+  const paginatedResults = activeResults.slice(
+    (page - 1) * pageSize,
+    (page - 1) * pageSize + pageSize
+  );
+
   return (
-  <div className="w-full flex justify-center ">
-  <div className="w-full h-full max-w-6xl px-8 py-8">
-        <div className="flex justify-center w-full">
-           <main className="w-full text-center">
+    <div className="w-full flex flex-col items-center px-4 md:px-8 py-8"> {/* Adjusted for responsiveness */}
+      <div className="w-full max-w-6xl">
+        <div className="flex flex-col items-center">
+          <main className="w-full text-center">
             <header className="mb-8 text-center max-w-3xl mx-auto">
-              <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900">
+              <h1 className="text-3xl md:text-5xl font-extrabold text-slate-900">
                 Explore Past Researches & Project Ideas
               </h1>
-              <p className="mt-2 text-lg text-slate-600">
+              <p className="mt-2 text-base md:text-lg text-slate-600">
                 Browse previous research works and innovative project ideas. Use filters or search to find inspiration and details for your next academic or creative endeavor.
               </p>
             </header>
@@ -108,7 +130,7 @@ const ResearchAssistant = () => {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search research papers, topics, or keywords…"
-                  className="rounded-2xl focus:ring-2 focus:ring-sky-500 focus:border-transparent w-full px-6 py-4 text-lg transition-all border border-gray-300 shadow-sm outline-none"
+                  className="rounded-2xl focus:ring-2 focus:ring-sky-500 focus:border-transparent w-full px-6 py-4 text-sm md:text-lg transition-all border border-gray-300 shadow-sm outline-none"
                 />
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                   <button
@@ -140,12 +162,12 @@ const ResearchAssistant = () => {
                 <h3 className="mb-3 text-sm font-semibold tracking-wider text-gray-500 uppercase">
                   Year
                 </h3>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-3 justify-center md:justify-start">
                   {YEARS.map((year) => (
                     <button
                       key={year}
                       onClick={() => handleFilterChange("year", year)}
-                      className={`px-5 py-2.5 rounded-lg border transition-all ${
+                      className={`px-4 md:px-5 py-2.5 rounded-lg border transition-all ${
                         filters.year === year
                           ? "bg-blue-600 text-white border-blue-600 shadow-md"
                           : "bg-white text-gray-700 border-gray-300 hover:border-blue-600 hover:text-blue-600"
@@ -162,12 +184,12 @@ const ResearchAssistant = () => {
                 <h3 className="mb-3 text-sm font-semibold tracking-wider text-gray-500 uppercase text-left">
                   Project Type
                 </h3>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-3 justify-center md:justify-start">
                   {TYPES.map((type) => (
                     <button
                       key={type}
                       onClick={() => handleFilterChange("type", type)}
-                      className={`px-5 py-2.5 rounded-lg border transition-all ${
+                      className={`px-4 md:px-5 py-2.5 rounded-lg border transition-all ${
                         filters.type === type
                           ? "bg-blue-600 text-white border-blue-600 shadow-md"
                           : "bg-white text-gray-700 border-gray-300 hover:border-blue-600 hover:text-blue-600"
@@ -182,18 +204,29 @@ const ResearchAssistant = () => {
 
             {/* Results Section */}
             <section className="mt-12 mb-8 bg-white/90 border border-blue-100 rounded-2xl shadow-lg w-full px-2 md:px-6 py-8 text-left">
-              <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-blue-700">Results</h2>
-                <span className="text-sm text-slate-500">{filteredResults.length} found</span>
+              <div className="mb-6 flex flex-col md:flex-row items-center justify-between">
+                <h2 className="text-xl md:text-2xl font-bold text-blue-700">Results</h2>
+                <span className="text-sm text-slate-500">{activeResults.length} found</span>
               </div>
+
+              {/* Bookmarks Toggle Button */}
+              <div className="mb-4 flex justify-center md:justify-end">
+                <button
+                  onClick={handleShowBookmarks}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  {showBookmarks ? "Show All" : "Bookmarks"}
+                </button>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {filteredResults.length === 0 ? (
+                {paginatedResults.length === 0 ? (
                   <div className="col-span-full text-center text-slate-500 py-12 text-lg">No results found. Try adjusting your search or filters.</div>
                 ) : (
-                  filteredResults.map((result, idx) => (
+                  paginatedResults.map((result, idx) => (
                     <article
                       key={idx}
-                      className="bg-white rounded-2xl p-6 shadow hover:shadow-2xl transition transform hover:-translate-y-1 relative border border-slate-100"
+                      className="bg-white rounded-2xl p-6 shadow hover:shadow-2xl transition-transform duration-300 ease-out [transform:perspective(1000px)] hover:[transform:perspective(1000px)_translateY(-6px)_rotateX(2deg)_rotateY(-2deg)] relative border border-gray-200"
                     >
                       <button
                         onClick={() => toggleBookmark(result)}
@@ -230,9 +263,36 @@ const ResearchAssistant = () => {
                         </button>
                       </div>
                     </article>
-                  ))
-                )}
+                  )))
+                }
               </div>
+
+              {activeResults.length > 0 && totalPages > 1 && (
+                <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                    className="px-4 py-2 rounded-lg border border-blue-200 text-blue-700 bg-white hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+
+                  <div className="text-sm text-slate-600">
+                    Page <span className="font-semibold text-blue-700">{page}</span> of{" "}
+                    <span className="font-semibold text-blue-700">{totalPages}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                    className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </section>
           </main>
         </div>

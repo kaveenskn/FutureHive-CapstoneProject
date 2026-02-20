@@ -10,8 +10,12 @@ pymongo==4.6.0
 # Environment Variables
 python-dotenv==1.0.0
 
+# Hugging Face (optional local model; can also use HF Inference API)
+transformers==4.47.1
+
 # AI/ML Libraries
-google-genai==0.2.2
+google-genai==1.56.0
+openai>=1.0.0
 langchain==0.1.0
 langchain-community==0.0.10
 langchain-text-splitters==0.0.1

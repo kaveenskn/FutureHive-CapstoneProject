@@ -1,14 +1,38 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const TopicSparkBody = () => {
+  const TRENDING_PAGE_SIZE = 12;
+  const SEARCH_PAGE_SIZE = 12;
+  const MIN_FILTER_RESULTS = 9;
+  const AUTO_FILL_MAX_ATTEMPTS = 3;
+
   const [selectedType, setSelectedType] = useState("all");
   const [projects, setProjects] = useState([]);
   const [query, setQuery] = useState("");
+  const [activeQuery, setActiveQuery] = useState("");
+  const [mode, setMode] = useState("trending"); // 'trending' | 'search'
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const navigate = useNavigate();
+
+  const autoFillRef = useRef({ key: "", attempts: 0, inFlight: false });
+  const requestRef = useRef({ id: 0, controller: null });
+
+  const beginRequest = () => {
+    // Cancel any in-flight request so older responses can't overwrite newer UI state.
+    try {
+      requestRef.current.controller?.abort();
+    } catch {
+      // ignore
+    }
+
+    const controller = new AbortController();
+    const id = requestRef.current.id + 1;
+    requestRef.current = { id, controller };
+    return { id, signal: controller.signal };
+  };
 
   const types = [
     { id: "all", label: "All Types" },
@@ -17,9 +41,11 @@ const TopicSparkBody = () => {
   ];
 
   // ⚙️ Helper function to map topic data
-  const mapTopics = (topics = []) =>
+  const mapTopics = (topics = [], pageNumber = 1) =>
     topics.map((t, idx) => ({
-      id: t.id || encodeURIComponent((t.title || "") + "-" + idx),
+      id:
+        t.id ||
+        encodeURIComponent((t.title || "") + "-" + String(pageNumber) + "-" + idx),
       title: t.title || "Untitled",
       description: t.description || "",
       type: t.type
@@ -30,52 +56,106 @@ const TopicSparkBody = () => {
     }));
 
   // ✅ Fetch all topics (with pagination)
-  const fetchTopics = async (pageNumber = 1, append = false) => {
+  const fetchTopics = async (pageNumber = 1, append = false, typeOverride = null) => {
+    const { id, signal } = beginRequest();
     setLoading(true);
     try {
+      const effectiveType =
+        typeOverride && typeOverride !== "all" ? String(typeOverride).toLowerCase() : "";
+      const typeParam = effectiveType ? `&type=${encodeURIComponent(effectiveType)}` : "";
       const res = await fetch(
-        `http://127.0.0.1:8000/topicspark?page=${pageNumber}&limit=6`
+        `http://127.0.0.1:8000/topicspark?page=${pageNumber}&limit=${TRENDING_PAGE_SIZE}${typeParam}`,
+        { signal }
       );
       const data = await res.json();
       const topics = data.topics || data;
-      const mapped = mapTopics(topics);
+      const mapped = mapTopics(topics, pageNumber);
+      if (requestRef.current.id !== id || signal.aborted) return;
 
-      if (mapped.length === 0) setHasMore(false);
+      setHasMore(mapped.length >= TRENDING_PAGE_SIZE);
       setProjects((prev) => (append ? [...prev, ...mapped] : mapped));
     } catch (e) {
+      if (e?.name === "AbortError") return;
       console.error("Error fetching topics:", e);
+      if (requestRef.current.id !== id) return;
       setProjects([]);
+      setHasMore(false);
     } finally {
-      setLoading(false);
+      if (requestRef.current.id === id) setLoading(false);
+    }
+  };
+
+  const fetchSearch = async (
+    pageNumber = 1,
+    append = false,
+    q = "",
+    typeOverride = null
+  ) => {
+    const trimmed = String(q || "").trim();
+    if (!trimmed) return;
+
+    const { id, signal } = beginRequest();
+    setLoading(true);
+    try {
+      const effectiveType =
+        typeOverride && typeOverride !== "all" ? String(typeOverride).toLowerCase() : "";
+
+      const res = await fetch("http://127.0.0.1:8000/topicspark/search", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        signal,
+        body: JSON.stringify({
+          query: trimmed,
+          page: pageNumber,
+          limit: SEARCH_PAGE_SIZE,
+          type: effectiveType || undefined,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const topics = data.topics || data;
+        const mapped = mapTopics(topics, pageNumber);
+        if (requestRef.current.id !== id || signal.aborted) return;
+        setHasMore(mapped.length >= SEARCH_PAGE_SIZE);
+        setProjects((prev) => (append ? [...prev, ...mapped] : mapped));
+      } else {
+        if (requestRef.current.id !== id || signal.aborted) return;
+        setHasMore(false);
+      }
+    } catch (e) {
+      if (e?.name === "AbortError") return;
+      console.error("Error searching topics:", e);
+      if (requestRef.current.id !== id) return;
+      setHasMore(false);
+    } finally {
+      if (requestRef.current.id === id) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTopics();
+    setMode("trending");
+    setPage(1);
+    setHasMore(true);
+    fetchTopics(1, false);
+    return () => {
+      try {
+        requestRef.current.controller?.abort();
+      } catch {
+        // ignore
+      }
+    };
   }, []);
 
   // ✅ Handle search (with backend)
   const handleSearch = async () => {
     if (!query.trim()) return;
-    setLoading(true);
-    try {
-      const res = await fetch("http://127.0.0.1:8000/topicspark/search", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ query }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const topics = data.topics || data;
-        const mapped = mapTopics(topics);
-        setProjects(mapped);
-        setHasMore(false);
-      }
-    } catch (e) {
-      console.error("Error searching topics:", e);
-    } finally {
-      setLoading(false);
-    }
+    const trimmed = query.trim();
+    setActiveQuery(trimmed);
+    setMode("search");
+    setPage(1);
+    setHasMore(true);
+    await fetchSearch(1, false, trimmed, selectedType);
   };
 
   // ✅ Filter by project type
@@ -86,8 +166,48 @@ const TopicSparkBody = () => {
           (p) => p.type.toLowerCase() === selectedType.toLowerCase()
         );
 
+  // Auto-fill filter pages so Research/Capstone show at least MIN_FILTER_RESULTS when possible.
+  useEffect(() => {
+    const typeLower = String(selectedType || "all").toLowerCase();
+    if (typeLower === "all") return;
+    if (loading || !hasMore) return;
+    if (filteredProjects.length >= MIN_FILTER_RESULTS) return;
+
+    const key = `${mode}|${typeLower}|${activeQuery}`;
+    if (autoFillRef.current.key !== key) {
+      autoFillRef.current = { key, attempts: 0, inFlight: false };
+    }
+    if (autoFillRef.current.inFlight) return;
+    if (autoFillRef.current.attempts >= AUTO_FILL_MAX_ATTEMPTS) return;
+
+    autoFillRef.current.inFlight = true;
+    autoFillRef.current.attempts += 1;
+
+    const nextPage = page + 1;
+    setPage(nextPage);
+
+    const run =
+      mode === "search"
+        ? fetchSearch(nextPage, true, activeQuery, typeLower)
+        : fetchTopics(nextPage, true, typeLower);
+
+    Promise.resolve(run).finally(() => {
+      autoFillRef.current.inFlight = false;
+    });
+  }, [
+    selectedType,
+    filteredProjects.length,
+    loading,
+    hasMore,
+    page,
+    mode,
+    activeQuery,
+  ]);
+
   const navigateToChatbot = (project) => {
-    navigate("/chat", { state: { paper: project } });
+
+    navigate("/chat", { state: { paper: project, source: "topicspark" } });
+
   };
 
   return (
@@ -165,101 +285,110 @@ const TopicSparkBody = () => {
         </div>
 
         {/* Results Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">
-            Showing {filteredProjects.length} results
-          </h2>
-        </div>
-
-        {/* ⚡ Loading Animation */}
-        {loading && (
-          <div className="flex flex-col items-center justify-center py-10 space-y-4">
-            <div className="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-gray-600 text-lg font-medium">
-              Fetching latest topics...
-            </p>
+        <section className="mt-12 mb-8 bg-white/90 border border-blue-100 rounded-2xl shadow-lg w-full px-2 md:px-6 py-8 text-left">
+          <div className="mb-6 flex flex-col md:flex-row items-center justify-between">
+            <h2 className="text-xl md:text-2xl font-bold text-blue-700">Results</h2>
+            <span className="text-sm text-slate-500">
+              {filteredProjects.length} found
+            </span>
           </div>
-        )}
 
-        {/* Results Grid */}
-        {!loading && filteredProjects.length > 0 && (
-          <div className="md:grid-cols-3 grid grid-cols-1 gap-6">
-            {filteredProjects.map((project) => (
-              <div
-                key={project.id}
-                className="flex flex-col justify-between rounded-xl hover:shadow-md p-6 transition-all duration-300 bg-white border border-gray-200 shadow-sm"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-2">
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        project.type === "Research"
-                          ? "bg-blue-100 text-blue-600"
-                          : "bg-green-100 text-green-600"
-                      }`}
-                    >
-                      {project.type}
-                    </span>
-                    {project.isHot && (
-                      <span className="px-2 py-1 text-xs font-medium text-red-600 bg-red-100 rounded-full">
-                        HOT
+          {/* ⚡ Loading Animation */}
+          {loading && (
+            <div className="flex flex-col items-center justify-center py-10 space-y-4">
+              <div className="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-gray-600 text-lg font-medium">
+                Fetching latest topics...
+              </p>
+            </div>
+          )}
+
+          {/* Results Grid */}
+          {!loading && filteredProjects.length > 0 && (
+            <div className="md:grid-cols-3 grid grid-cols-1 gap-6">
+              {filteredProjects.map((project) => (
+                <article
+                  key={project.id}
+                  className="bg-white rounded-2xl p-6 shadow hover:shadow-2xl transition-transform duration-300 ease-out [transform:perspective(1000px)] hover:[transform:perspective(1000px)_translateY(-6px)_rotateX(2deg)_rotateY(-2deg)] relative border border-gray-200 flex flex-col justify-between"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          project.type === "Research"
+                            ? "bg-blue-100 text-blue-600"
+                            : "bg-green-100 text-green-600"
+                        }`}
+                      >
+                        {project.type}
                       </span>
+                      {project.isHot && (
+                        <span className="px-2 py-1 text-xs font-medium text-red-600 bg-red-100 rounded-full">
+                          HOT
+                        </span>
+                      )}
+                    </div>
+                    {project.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 justify-end">
+                        {project.tags.map((tag, index) => (
+                          <span
+                            key={index}
+                            className="px-2 py-1 text-xs font-medium text-orange-600 bg-orange-100 rounded-full"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
                     )}
                   </div>
-                  {project.tags.length > 0 && (
-                    <div className="flex space-x-1">
-                      {project.tags.map((tag, index) => (
-                        <span
-                          key={index}
-                          className="px-2 py-1 text-xs font-medium text-orange-600 bg-orange-100 rounded-full"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
 
-                <h3 className="mb-3 text-xl font-bold text-gray-900">
-                  {project.title}
-                </h3>
-                <p className="mb-6 leading-relaxed text-gray-600">
-                  {project.description}
-                </p>
+                  <h3 className="text-lg font-semibold mb-1 text-slate-900">
+                    {project.title}
+                  </h3>
+                  <p className="text-sm text-slate-700 mb-6 line-clamp-3">
+                    {project.description}
+                  </p>
 
-                <button
-                  onClick={() => navigateToChatbot(project)}
-                  className="bg-blue-600 hover:bg-blue-700 hover:scale-105 w-full px-4 py-3 font-semibold text-white transition-all duration-300 transform rounded-lg shadow-md mb-0"
-                >
-                  Explore Project
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+                  <div className="mt-2 flex justify-end">
+                    <button
+                      onClick={() => navigateToChatbot(project)}
+                      className="px-5 py-2 rounded-lg bg-gradient-to-r from-sky-500 to-sky-400 text-white font-medium shadow hover:scale-[1.01] transition"
+                    >
+                      Explore Project
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
 
-        {/* No results */}
-        {!loading && filteredProjects.length === 0 && (
-          <div className="text-center text-gray-500 text-lg py-10">
-            No topics found.
-          </div>
-        )}
+          {/* No results */}
+          {!loading && filteredProjects.length === 0 && (
+            <div className="text-center text-slate-500 py-12 text-lg">
+              No topics found.
+            </div>
+          )}
 
-        {/* Load More */}
-        {!loading && hasMore && (
-          <div className="mt-12 text-center">
-            <button
-              className="hover:bg-blue-50 px-8 py-3 font-semibold text-blue-600 transition-colors bg-white border border-blue-600 rounded-lg shadow-md"
-              onClick={() => {
-                const nextPage = page + 1;
-                setPage(nextPage);
-                fetchTopics(nextPage, true);
-              }}
-            >
-              Load More Projects
-            </button>
-          </div>
-        )}
+          {/* Load More */}
+          {!loading && hasMore && (
+            <div className="mt-12 text-center">
+              <button
+                className="hover:bg-blue-50 px-8 py-3 font-semibold text-blue-600 transition-colors bg-white border border-blue-600 rounded-lg shadow-md"
+                onClick={() => {
+                  const nextPage = page + 1;
+                  setPage(nextPage);
+                  if (mode === "search") {
+                    fetchSearch(nextPage, true, activeQuery, selectedType);
+                  } else {
+                    fetchTopics(nextPage, true, selectedType);
+                  }
+                }}
+              >
+                Load More Projects
+              </button>
+            </div>
+          )}
+        </section>
       </div>
     </main>
   );
