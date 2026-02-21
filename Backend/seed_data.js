@@ -10,7 +10,7 @@ admin.initializeApp({
 const db = admin.firestore();
 
 async function seedData() {
-  console.log("🌱 Seeding sample data...\n");
+  console.log(" Seeding sample data...\n");
 
   // Sample users
   const sampleUsers = [
@@ -61,7 +61,7 @@ async function seedData() {
     console.log("Adding users...");
     for (const user of sampleUsers) {
       const docRef = await db.collection("users").add(user);
-      console.log(`✅ Added user: ${user.name} (ID: ${docRef.id})`);
+      console.log(` Added user: ${user.name} (ID: ${docRef.id})`);
     }
 
     // Add research entries
@@ -85,13 +85,13 @@ async function seedData() {
 
     for (const research of sampleResearch) {
       const docRef = await db.collection("research_entries").add(research);
-      console.log(`✅ Added research: ${research.title} (ID: ${docRef.id})`);
+      console.log(` Added research: ${research.title} (ID: ${docRef.id})`);
     }
 
-    console.log("\n✅ Sample data seeded successfully!");
+    console.log("\n Sample data seeded successfully!");
     process.exit(0);
   } catch (error) {
-    console.error("❌ Error seeding data:", error);
+    console.error(" Error seeding data:", error);
     process.exit(1);
   }
 }

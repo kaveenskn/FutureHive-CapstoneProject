@@ -22,13 +22,13 @@ def print_response(title, response):
 
 def test_dashboard_stats():
     """Test dashboard statistics endpoint"""
-    print("\n🔍 Testing Dashboard Statistics...")
+    print("\n Testing Dashboard Statistics...")
     response = requests.get(f"{BASE_URL}/dashboard/stats")
     print_response("Dashboard Stats", response)
 
 def test_create_user():
     """Test creating a new user"""
-    print("\n🔍 Testing User Creation...")
+    print("\n Testing User Creation...")
     user_data = {
         "name": "Test User",
         "email": f"test_{requests.utils.quote('test@example.com')}",
@@ -45,33 +45,33 @@ def test_create_user():
 
 def test_get_users():
     """Test getting all users"""
-    print("\n🔍 Testing Get All Users...")
+    print("\n Testing Get All Users...")
     response = requests.get(f"{BASE_URL}/users?page=1&per_page=5")
     print_response("Get All Users", response)
 
 def test_search_users():
     """Test searching users"""
-    print("\n🔍 Testing User Search...")
+    print("\n Testing User Search...")
     response = requests.get(f"{BASE_URL}/users?search=test&page=1&per_page=5")
     print_response("Search Users", response)
 
 def test_get_user(user_id):
     """Test getting a specific user"""
     if not user_id:
-        print("\n⚠️ Skipping Get User - No user ID provided")
+        print("\n Skipping Get User - No user ID provided")
         return
     
-    print(f"\n🔍 Testing Get User by ID: {user_id}...")
+    print(f"\n Testing Get User by ID: {user_id}...")
     response = requests.get(f"{BASE_URL}/users/{user_id}")
     print_response(f"Get User {user_id}", response)
 
 def test_update_user(user_id):
     """Test updating a user"""
     if not user_id:
-        print("\n⚠️ Skipping Update User - No user ID provided")
+        print("\n Skipping Update User - No user ID provided")
         return
     
-    print(f"\n🔍 Testing Update User: {user_id}...")
+    print(f"\n Testing Update User: {user_id}...")
     update_data = {
         "name": "Updated Test User",
         "role": "Moderator"
@@ -82,16 +82,16 @@ def test_update_user(user_id):
 def test_delete_user(user_id):
     """Test deleting a user"""
     if not user_id:
-        print("\n⚠️ Skipping Delete User - No user ID provided")
+        print("\n Skipping Delete User - No user ID provided")
         return
     
-    print(f"\n🔍 Testing Delete User: {user_id}...")
+    print(f"\n Testing Delete User: {user_id}...")
     response = requests.delete(f"{BASE_URL}/users/{user_id}")
     print_response(f"Delete User {user_id}", response)
 
 def test_create_research():
     """Test creating a research entry"""
-    print("\n🔍 Testing Research Entry Creation...")
+    print("\n Testing Research Entry Creation...")
     research_data = {
         "title": "Test Research: AI in Healthcare",
         "abstract": "This is a test abstract about artificial intelligence applications in modern healthcare systems.",
@@ -109,27 +109,27 @@ def test_create_research():
 
 def test_get_research():
     """Test getting all research entries"""
-    print("\n🔍 Testing Get All Research Entries...")
+    print("\n Testing Get All Research Entries...")
     response = requests.get(f"{BASE_URL}/research?page=1&per_page=10")
     print_response("Get All Research", response)
 
 def test_get_research_by_id(research_id):
     """Test getting a specific research entry"""
     if not research_id:
-        print("\n⚠️ Skipping Get Research - No research ID provided")
+        print("\n Skipping Get Research - No research ID provided")
         return
     
-    print(f"\n🔍 Testing Get Research by ID: {research_id}...")
+    print(f"\n Testing Get Research by ID: {research_id}...")
     response = requests.get(f"{BASE_URL}/research/{research_id}")
     print_response(f"Get Research {research_id}", response)
 
 def test_update_research(research_id):
     """Test updating a research entry"""
     if not research_id:
-        print("\n⚠️ Skipping Update Research - No research ID provided")
+        print("\n Skipping Update Research - No research ID provided")
         return
     
-    print(f"\n🔍 Testing Update Research: {research_id}...")
+    print(f"\n Testing Update Research: {research_id}...")
     update_data = {
         "title": "Updated Test Research: AI in Healthcare",
         "year": 2025
@@ -140,17 +140,17 @@ def test_update_research(research_id):
 def test_delete_research(research_id):
     """Test deleting a research entry"""
     if not research_id:
-        print("\n⚠️ Skipping Delete Research - No research ID provided")
+        print("\n Skipping Delete Research - No research ID provided")
         return
     
-    print(f"\n🔍 Testing Delete Research: {research_id}...")
+    print(f"\n Testing Delete Research: {research_id}...")
     response = requests.delete(f"{BASE_URL}/research/{research_id}")
     print_response(f"Delete Research {research_id}", response)
 
 def run_all_tests():
     """Run all API tests"""
     print("\n" + "="*60)
-    print("🚀 Starting Admin Panel API Tests")
+    print(" Starting Admin Panel API Tests")
     print("="*60)
     print("\nMake sure the Flask server is running on http://localhost:5000")
     

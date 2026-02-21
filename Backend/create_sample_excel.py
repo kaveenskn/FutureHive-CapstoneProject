@@ -44,7 +44,7 @@ df = pd.DataFrame(data)
 output_file = './datas/research_upload_template.xlsx'
 df.to_excel(output_file, index=False)
 
-print(f"✅ Sample Excel template created: {output_file}")
+print(f" Sample Excel template created: {output_file}")
 print("\nTemplate structure:")
 print(df.head())
 print("\nYou can use this template for bulk upload!")

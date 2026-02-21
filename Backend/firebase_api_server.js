@@ -17,7 +17,6 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
-// ============ USER MANAGEMENT ENDPOINTS ============
 
 // GET all users with pagination and search
 app.get("/api/users", async (req, res) => {
@@ -210,7 +209,6 @@ app.delete("/api/users/:id", async (req, res) => {
   }
 });
 
-// ============ DASHBOARD STATS ENDPOINTS ============
 
 // GET dashboard statistics
 app.get("/api/dashboard/stats", async (req, res) => {
@@ -242,7 +240,6 @@ app.get("/api/dashboard/stats", async (req, res) => {
   }
 });
 
-// ============ HEALTH CHECK ============
 
 app.get("/health", (req, res) => {
   res.json({
@@ -274,8 +271,8 @@ app.get("/", (req, res) => {
 // Start server
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
-  console.log(`\n🔥 Firebase API Server running on http://localhost:${PORT}`);
-  console.log(`\n📝 Available endpoints:`);
+  console.log(`\n Firebase API Server running on http://localhost:${PORT}`);
+  console.log(`\n Available endpoints:`);
   console.log(`   GET    http://localhost:${PORT}/health`);
   console.log(`   GET    http://localhost:${PORT}/api/users`);
   console.log(`   GET    http://localhost:${PORT}/api/users/:id`);
@@ -283,5 +280,5 @@ app.listen(PORT, () => {
   console.log(`   PUT    http://localhost:${PORT}/api/users/:id`);
   console.log(`   DELETE http://localhost:${PORT}/api/users/:id`);
   console.log(`   GET    http://localhost:${PORT}/api/dashboard/stats`);
-  console.log(`\n✅ Ready for Postman testing!\n`);
+  console.log(`\n Ready for Postman testing!\n`);
 });

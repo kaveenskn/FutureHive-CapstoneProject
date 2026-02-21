@@ -33,7 +33,7 @@ app.add_middleware(
 
 
 # -------------------------------
-# 🧠 Helper: Always return an array
+#  Helper: Always return an array
 # -------------------------------
 def force_topic_array(data):
     """
@@ -62,7 +62,7 @@ def force_topic_array(data):
 
 
 # -------------------------------
-# 📌 TOPICSPARK: TRENDING TOPICS
+#  TOPICSPARK: TRENDING TOPICS
 # -------------------------------
 @app.get("/topicspark")
 async def get_trending_topics():
@@ -140,7 +140,7 @@ async def get_trending_topics():
 
 
 # -------------------------------
-# 🔍 SEARCH TOPICS
+#  SEARCH TOPICS
 # -------------------------------
 @app.post("/topicspark/search")
 async def search_topicspark(request: Request):
