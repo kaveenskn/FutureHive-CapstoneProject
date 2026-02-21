@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
 import MentorManagementSection from "../components/admin/MentorManagementSection";
 
-// API Base URL
-const API_BASE_URL = "http://localhost:5001/api";
+// API Base URLs
+const ADMIN_API_BASE_URL =
+  import.meta.env.VITE_ADMIN_API_BASE_URL || "http://localhost:5000/api/admin";
+const FIREBASE_API_BASE_URL =
+  import.meta.env.VITE_FIREBASE_API_BASE_URL || "http://localhost:5001/api";
 
 const App = () => {
   const [currentPage, setCurrentPage] = useState("home");
@@ -94,6 +97,7 @@ const AIResearchAssistant = ({ onAccessAdmin }) => {
 };
 const AdminPanel = ({ onBack }) => {
   const [users, setUsers] = useState([]);
+  const [totalUsersCount, setTotalUsersCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState("");
@@ -131,12 +135,16 @@ const AdminPanel = ({ onBack }) => {
     fetchStats();
   }, [currentPage, searchQuery]);
 
+  const getUserId = (user) => user?._id || user?.id;
+
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
       setApiError("");
       const response = await fetch(
-        `${API_BASE_URL}/users?page=${currentPage}&limit=${usersPerPage}&search=${searchQuery}`
+        `${FIREBASE_API_BASE_URL}/users?search=${encodeURIComponent(
+          searchQuery
+        )}&page=${currentPage}&limit=${usersPerPage}`
       );
 
       let data = null;
@@ -149,24 +157,31 @@ const AdminPanel = ({ onBack }) => {
       if (!response.ok) {
         const msg =
           (data && data.error) ||
-          `Failed to fetch users (HTTP ${response.status}). Is the Firebase API running on port 5001?`;
+          `Failed to fetch users (HTTP ${response.status}). Is the Firebase API server running on port 5001?`;
         setApiError(msg);
         setUsers([]);
+        setTotalUsersCount(0);
         return;
       }
 
       if (data.success) {
-        setUsers(data.users);
+        setUsers(data.users || []);
+        setTotalUsersCount(
+          typeof data.total === "number" ? data.total : (data.users || []).length
+        );
       } else {
         console.error("Failed to fetch users:", data.error);
         setApiError(data.error || "Failed to fetch users.");
+        setUsers([]);
+        setTotalUsersCount(0);
       }
     } catch (error) {
       console.error("Error fetching users:", error);
       setApiError(
-        "Could not connect to the Firebase API (http://localhost:5001). Start the Backend/firebase_api_server.js server."
+        "Could not connect to the Firebase API server (http://localhost:5001). Start Backend/firebase_api_server.js."
       );
       setUsers([]);
+      setTotalUsersCount(0);
     } finally {
       setIsLoading(false);
     }
@@ -174,7 +189,7 @@ const AdminPanel = ({ onBack }) => {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/dashboard/stats`);
+      const response = await fetch(`${FIREBASE_API_BASE_URL}/dashboard/stats`);
       const data = await response.json();
 
       if (data.success) {
@@ -206,15 +221,20 @@ const AdminPanel = ({ onBack }) => {
   };
 
   const filteredUsers = users;
-  const totalUsers = users.length;
-  const indexOfLastUser = currentPage * usersPerPage;
-  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const totalUsers = totalUsersCount;
+  const indexOfFirstUser = (currentPage - 1) * usersPerPage;
+  const indexOfLastUser = indexOfFirstUser + users.length;
   const currentUsers = users;
   const totalPages = Math.ceil(totalUsers / usersPerPage);
 
   const handleView = async (user) => {
+    const userId = getUserId(user);
+    if (!userId) {
+      alert("User ID not found");
+      return;
+    }
     try {
-      const response = await fetch(`${API_BASE_URL}/users/${user.id}`);
+      const response = await fetch(`${FIREBASE_API_BASE_URL}/users/${userId}`);
       const data = await response.json();
 
       if (data.success) {
@@ -249,14 +269,18 @@ const AdminPanel = ({ onBack }) => {
       return;
     }
 
-    await updateUser(userToEdit.id, { name, email, role });
+  await updateUser(getUserId(userToEdit), { name, email, role });
     setShowEditModal(false);
     setUserToEdit(null);
   };
 
   const updateUser = async (userId, updates) => {
+    if (!userId) {
+      alert("User ID not found");
+      return;
+    }
     try {
-      const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+      const response = await fetch(`${FIREBASE_API_BASE_URL}/users/${userId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -279,9 +303,14 @@ const AdminPanel = ({ onBack }) => {
   };
 
   const handleDelete = async (user) => {
+    const userId = getUserId(user);
+    if (!userId) {
+      alert("User ID not found");
+      return;
+    }
     if (window.confirm(`Are you sure you want to delete ${user.name}?`)) {
       try {
-        const response = await fetch(`${API_BASE_URL}/users/${user.id}`, {
+        const response = await fetch(`${FIREBASE_API_BASE_URL}/users/${userId}`, {
           method: "DELETE",
         });
 
@@ -616,7 +645,10 @@ const AdminPanel = ({ onBack }) => {
                       </tr>
                     ) : (
                       currentUsers.map((user) => (
-                        <tr key={user.id} className="hover:bg-gray-50">
+                        <tr
+                          key={user._id || user.id || user.email}
+                          className="hover:bg-gray-50"
+                        >
                           <td className="whitespace-nowrap px-6 py-4">
                             <div className="text-sm font-medium text-gray-900">
                               {user.name}
@@ -642,7 +674,7 @@ const AdminPanel = ({ onBack }) => {
                           </td>
                           <td className="whitespace-nowrap px-6 py-4">
                             <span className="inline-flex px-2 text-xs font-semibold leading-5 text-green-800 bg-green-100 rounded-full">
-                              {user.status}
+                              {user.status || "Active"}
                             </span>
                           </td>
                           <td className="whitespace-nowrap px-6 py-4 text-sm font-medium">

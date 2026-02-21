@@ -21,8 +21,8 @@ import ResearchAdminpanel from "./pages/ResearchAdminpanel.jsx";
 function App() {
   const location = useLocation();
 
-  // hide navbar on admin panel
-  const hideNavbar = location.pathname === "/adminpanel";
+  // Hide navbar on full-screen pages
+  const hideNavbar = location.pathname === "/adminpanel" || location.pathname === "/signin";
 
   return (
     <>

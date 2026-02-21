@@ -13,340 +13,362 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-
+# -------------------------------
+# ENV
+# -------------------------------
 def _load_env() -> None:
     env_path = Path(__file__).resolve().parent / ".env"
     load_dotenv(dotenv_path=env_path if env_path.exists() else None, override=True)
 
-
 _load_env()
 
 OLLAMA_BASE_URL = (os.getenv("OLLAMA_BASE_URL") or "http://127.0.0.1:11434").rstrip("/")
-_ENV_OLLAMA_MODEL = (os.getenv("OLLAMA_MODEL") or "").strip()
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL") or "llama3.2:1b-instruct"
 OLLAMA_TIMEOUT_S = float(os.getenv("OLLAMA_TIMEOUT_S") or "120")
 
-API_HOST = (os.getenv("OLLAMA_TOPICSPARK_HOST") or "127.0.0.1").strip() or "127.0.0.1"
-API_PORT = int(os.getenv("OLLAMA_TOPICSPARK_PORT") or os.getenv("PORT") or "8000")
+API_HOST = os.getenv("OLLAMA_TOPICSPARK_HOST") or "127.0.0.1"
+API_PORT = int(os.getenv("OLLAMA_TOPICSPARK_PORT") or "8000")
 
 
-def _list_installed_ollama_models() -> list[str]:
-    """Return installed model names from Ollama, or [] if unreachable."""
+def _normalize_topic_type(value: Any | None) -> str | None:
+    if value is None:
+        return None
+    v = str(value).strip().lower()
+    if v in {"research", "paper"}:
+        return "research"
+    if v in {"capstone", "project", "software", "software_project", "software-project"}:
+        return "capstone"
+    if v in {"all", ""}:
+        return None
+    return None
+
+
+def _clamp_limit(value: Any | None, default: int) -> int:
     try:
-        r = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=3)
-        if r.status_code != 200:
-            return []
-        data = r.json() or {}
-        models = data.get("models") or []
-        names: list[str] = []
-        for m in models:
-            if isinstance(m, dict) and m.get("name"):
-                names.append(str(m["name"]))
-        return names
+        n = int(value) if value is not None else int(default)
     except Exception:
-        return []
+        n = int(default)
+    # User requirement: minimum of six responses
+    n = max(6, n)
+    # Keep it bounded to avoid excessive LLM calls
+    return max(1, min(n, 30))
 
 
-def _pick_default_model(installed: list[str]) -> str:
-    preferred = [
-        "gemma3:1b",
-        "qwen2.5:1.5b-instruct",
-        "qwen2.5:0.5b-instruct",
-        "llama3.2:1b-instruct",
-        "phi3:mini",
-    ]
-    installed_set = set(installed)
-    for m in preferred:
-        if m in installed_set:
-            return m
-    return installed[0] if installed else "gemma3:1b"
+def _title_prefix_for_type(topic_type: str) -> str:
+    return "Software Project Idea: " if topic_type == "capstone" else "Research Project Idea: "
 
 
-_INSTALLED_MODELS = _list_installed_ollama_models()
-OLLAMA_MODEL = _ENV_OLLAMA_MODEL or _pick_default_model(_INSTALLED_MODELS)
+def _ensure_prefixed_title(title: str, topic_type: str) -> str:
+    prefix = _title_prefix_for_type(topic_type)
+    t = (title or "").strip()
+    if not t:
+        return prefix + "Untitled"
+    if t.lower().startswith(prefix.lower()):
+        return t
+    # Avoid double-prefixing if model already wrote something like "Research idea:" etc.
+    if "project idea" in t.lower():
+        return t
+    return prefix + t
 
 
-def _humanize_ollama_error(err: Exception) -> str:
-    msg = str(err) or err.__class__.__name__
-    low = msg.lower()
+def _normalize_topics(raw_topics: list[dict], forced_type: str | None = None) -> list[dict]:
+    topics: list[dict] = []
+    for item in raw_topics or []:
+        if not isinstance(item, dict):
+            continue
 
-    if "connection" in low and ("refused" in low or "failed" in low):
-        return (
-            "Cannot reach Ollama. Make sure Ollama is running locally and reachable at "
-            f"{OLLAMA_BASE_URL}."
+        t = _normalize_topic_type(forced_type) or _normalize_topic_type(item.get("type")) or "research"
+        title = _ensure_prefixed_title(str(item.get("title", "")).strip(), t)[:160]
+        description = str(item.get("description", "")).strip()
+        if not description:
+            description = "Generated project idea."
+        topics.append({
+            "title": title,
+            "description": description,
+            "type": t,
+        })
+    return topics
+
+
+def _interleave(a: list[dict], b: list[dict]) -> list[dict]:
+    out: list[dict] = []
+    for i in range(max(len(a), len(b))):
+        if i < len(a):
+            out.append(a[i])
+        if i < len(b):
+            out.append(b[i])
+    return out
+
+
+def _looks_non_english(text: str) -> bool:
+    """Heuristic guardrail: detect when the model returns non-English text.
+
+    This is intentionally lightweight (no extra deps). It flags common non-Latin
+    scripts and very low ASCII share.
+    """
+
+    if not text:
+        return False
+
+    # Common non-Latin blocks (CJK, Hangul, Hiragana/Katakana, Arabic, Cyrillic, Devanagari)
+    non_latin_re = re.compile(
+        r"[\u0400-\u04FF\u0600-\u06FF\u0900-\u097F\u3040-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uAC00-\uD7AF]"
+    )
+    if non_latin_re.search(text):
+        return True
+
+    # If the response contains too few ASCII characters, it's likely not English.
+    ascii_count = sum(1 for ch in text if ord(ch) < 128)
+    ratio = ascii_count / max(len(text), 1)
+    return ratio < 0.85
+
+
+def _topics_look_non_english(topics: list[dict]) -> bool:
+    for t in topics:
+        title = str(t.get("title", ""))
+        desc = str(t.get("description", ""))
+        if _looks_non_english(title) or _looks_non_english(desc):
+            return True
+    return False
+
+
+async def _generate_topics_json(count: int, topic_type: str, query: str | None = None) -> list[dict]:
+    """Generate topics with stronger guarantees and post-normalization."""
+
+    t = _normalize_topic_type(topic_type) or "research"
+    n = max(1, int(count))
+    prefix = _title_prefix_for_type(t)
+    focus_line = (
+        f'Related to: "{query}"\n' if query and str(query).strip() else ""
+    )
+
+    prompt = f"""
+Generate EXACTLY {n} items.
+
+LANGUAGE:
+- English only
+- Use plain, professional academic English
+
+CONTENT:
+- These must be {"software capstone project" if t == "capstone" else "research"} ideas.
+- Each title MUST start with: {prefix}
+{focus_line}
+
+STRICT RULES:
+- Return ONLY valid JSON (no markdown, no prose)
+- Output MUST be a JSON array with EXACTLY {n} objects
+- Every object MUST have: title, description, type
+- type MUST be exactly: "{t}"
+
+FORMAT:
+[
+  {{"title":"{prefix}...","description":"...","type":"{t}"}}
+]
+"""
+
+    answer = await _generate_with_retry(prompt)
+    parsed = extract_json(answer)
+    result = force_topic_array(parsed)
+    topics = _normalize_topics(result.get("topics", []), forced_type=t)
+
+    # Retry once if content came back non-English or empty.
+    if not topics or _topics_look_non_english(topics):
+        answer = await _generate_with_retry(
+            prompt
+            + "\nIMPORTANT: English only. If unsure, still respond in English.\n"
         )
+        parsed = extract_json(answer)
+        result = force_topic_array(parsed)
+        topics = _normalize_topics(result.get("topics", []), forced_type=t)
 
-    if "not found" in low and "model" in low:
-        installed_hint = (
-            f" Installed models: {', '.join(_INSTALLED_MODELS)}" if _INSTALLED_MODELS else ""
-        )
-        return (
-            f"Ollama model '{OLLAMA_MODEL}' not found. "
-            f"Run: ollama pull {OLLAMA_MODEL}.{installed_hint}"
-        )
+    if topics:
+        return topics[:n]
 
-    if "timeout" in low:
-        return "Ollama request timed out. Try a smaller prompt/model or increase OLLAMA_TIMEOUT_S."
+    # Fallback: split unstructured and normalize
+    fallback = split_unstructured(answer, t)
+    return _normalize_topics(fallback, forced_type=t)[:n]
 
-    return msg
-
-
+# -------------------------------
+# OLLAMA CORE
+# -------------------------------
 def _ollama_generate_sync(prompt: str) -> str:
-    url = f"{OLLAMA_BASE_URL}/api/generate"
+    r = requests.post(
+        f"{OLLAMA_BASE_URL}/api/generate",
+        json={
+            "model": OLLAMA_MODEL,
+            "prompt": prompt,
+            "stream": False,
+        },
+        timeout=OLLAMA_TIMEOUT_S,
+    )
 
-    payload: dict[str, Any] = {
-        "model": OLLAMA_MODEL,
-        "prompt": prompt,
-        "stream": False,
-    }
-
-    r = requests.post(url, json=payload, timeout=OLLAMA_TIMEOUT_S)
     if r.status_code != 200:
-        raise RuntimeError(f"Ollama HTTP {r.status_code}: {r.text[:500]}")
+        raise RuntimeError(r.text)
 
-    data = r.json() or {}
-    text = data.get("response")
-    if not text or not str(text).strip():
-        raise RuntimeError(f"No text in Ollama response: {str(data)[:500]}")
-
-    return str(text).strip()
+    return r.json().get("response", "").strip()
 
 
 async def _generate_with_retry(prompt: str) -> str:
-    max_retries = 3
-    base_delay = 0.8
-    last_error: Exception | None = None
-
-    for attempt in range(max_retries):
+    for attempt in range(3):
         try:
             return await asyncio.to_thread(_ollama_generate_sync, prompt)
-        except Exception as e:
-            last_error = e
-            delay = base_delay * (2**attempt) + random.uniform(0, 0.4)
-            await asyncio.sleep(delay)
-
-    raise last_error or RuntimeError("Failed to generate content")
-
+        except Exception:
+            await asyncio.sleep(0.8 * (2 ** attempt))
+    raise RuntimeError("Ollama generation failed")
 
 # -------------------------------
-# Helper: Always return an array
+# JSON HELPERS
 # -------------------------------
+def extract_json(text: str) -> Any | None:
+    text = text.strip()
 
-def force_topic_array(data: Any) -> dict[str, list[dict[str, Any]]]:
-    """Ensures output is always: {"topics": [ ... ] }."""
+    # remove markdown fences
+    text = re.sub(r"^```.*?\n", "", text)
+    text = re.sub(r"\n```$", "", text)
 
+    try:
+        return json.loads(text)
+    except Exception:
+        pass
+
+    match = re.search(r"(\[.*\]|\{.*\})", text, re.S)
+    if match:
+        try:
+            return json.loads(match.group(1))
+        except Exception:
+            pass
+
+    return None
+
+
+def force_topic_array(data: Any) -> dict[str, list[dict]]:
     if isinstance(data, dict) and isinstance(data.get("topics"), list):
-        topics = data.get("topics")
-        if all(isinstance(t, dict) for t in topics):
-            return {"topics": topics}
-        return {"topics": [t for t in topics if isinstance(t, dict)]}
+        return {"topics": data["topics"]}
 
     if isinstance(data, list):
-        return {"topics": [t for t in data if isinstance(t, dict)]}
-
-    if isinstance(data, str):
-        try:
-            parsed = json.loads(data)
-            return force_topic_array(parsed)
-        except Exception:
-            return {"topics": []}
+        return {"topics": [x for x in data if isinstance(x, dict)]}
 
     return {"topics": []}
 
 
-def _extract_json_payload(text: str) -> Any | None:
-    """Try to extract a JSON object/array from a model response."""
-    s = (text or "").strip()
-    if not s:
-        return None
+def split_unstructured(text: str, default_type: str) -> list[dict]:
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
+    topics = []
 
-    # Strip markdown code fences like: ```json ... ```
-    if s.startswith("```"):
-        s = re.sub(r"^```[a-zA-Z0-9_-]*\s*", "", s)
-        s = re.sub(r"\s*```\s*$", "", s).strip()
+    for l in lines:
+        if re.match(r"^(\d+\.|-|\*)\s+", l):
+            title = re.sub(r"^(\d+\.|-|\*)\s+", "", l)
+            topics.append({
+                "title": title[:120],
+                "description": "Generated from AI response.",
+                "type": default_type,
+            })
 
-    # Fast-path: if it's fully valid JSON already.
-    try:
-        return json.loads(s)
-    except Exception:
-        pass
+    return topics
 
-    # Find first JSON token and parse as a stream.
-    m = re.search(r"[\[{]", s)
-    if not m:
-        return None
-    s2 = s[m.start() :]
+# -------------------------------
+# SEARCH INTENT DETECTION
+# -------------------------------
+def infer_topic_type_from_query(query: str) -> str | None:
+    q = query.lower()
 
-    decoder = json.JSONDecoder()
+    research_keywords = [
+        "research", "study", "analysis", "survey",
+        "framework", "evaluation", "modeling", "method"
+    ]
 
-    def decode_many(chunk: str) -> list[Any]:
-        items: list[Any] = []
-        idx = 0
-        while idx < len(chunk):
-            while idx < len(chunk) and chunk[idx] in " \t\r\n,":
-                idx += 1
-            if idx >= len(chunk):
-                break
-            try:
-                obj, end = decoder.raw_decode(chunk, idx)
-            except Exception:
-                break
-            items.append(obj)
-            idx = end
-        return items
+    capstone_keywords = [
+        "project", "system", "application", "platform",
+        "tool", "implementation", "development"
+    ]
 
-    # If the response *starts* with an array but the array is malformed (e.g. missing commas
-    # between objects), fall back to decoding individual objects inside the brackets.
-    if s2.startswith("["):
-        try:
-            return json.loads(s2)
-        except Exception:
-            last = s2.rfind("]")
-            inner = s2[1:last] if last != -1 else s2[1:]
-            items = decode_many(inner)
-            if items:
-                if all(isinstance(x, dict) for x in items):
-                    return items
-                combined: list[Any] = []
-                for x in items:
-                    if isinstance(x, list):
-                        combined.extend(x)
-                    else:
-                        combined.append(x)
-                return combined
-            return None
+    if any(k in q for k in research_keywords):
+        return "research"
 
-    items = decode_many(s2)
-    if not items:
-        return None
-    if len(items) == 1:
-        return items[0]
+    if any(k in q for k in capstone_keywords):
+        return "capstone"
 
-    # Multiple top-level JSON values (common when the model emits {..}{..}{..} without commas)
-    # Prefer returning a list of dicts if possible.
-    if all(isinstance(x, dict) for x in items):
-        return items
+    return None  # mixed / unknown
 
-    combined: list[Any] = []
-    for x in items:
-        if isinstance(x, list):
-            combined.extend(x)
-        else:
-            combined.append(x)
-    return combined
-
-
-# --- FastAPI setup ---
+# -------------------------------
+# FASTAPI
+# -------------------------------
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
 # -------------------------------
-# TOPICSPARK: TRENDING TOPICS
+# TRENDING TOPICS
 # -------------------------------
 @app.get("/topicspark")
-async def get_trending_topics():
-    prompt = """
-You generate trending academic capstone and research topic ideas.
+async def trending_topics(page: int = 1, limit: int = 10, type: str | None = None):
+    """Trending topics.
 
-Return ONLY valid JSON (no markdown/code fences) and no extra text.
-Return a JSON array with EXACTLY 10 items. Ensure proper commas between items.
-Each item must be an object with keys:
-- title (string)
-- description (string, 1-2 sentences)
-- type (either \"research\" or \"capstone\")
-
-JSON ARRAY ONLY:
-[
-  {\"title\": \"...\", \"description\": \"...\", \"type\": \"research\"}
-]
-""".strip()
+    Rules requested:
+    - Default (no type filter): exactly 5 research + 5 capstone (10 total)
+    - If type=research/capstone: return only that type
+    - Always return at least 6 items overall (handled via clamp for filtered mode)
+    """
 
     try:
-        answer = await _generate_with_retry(prompt)
-        parsed = _extract_json_payload(answer)
-        topics = force_topic_array(parsed if parsed is not None else [])
+        normalized_type = _normalize_topic_type(type)
 
-        # If the model returned an empty/invalid array, surface the raw response in a safe way.
-        if not topics.get("topics"):
-            return {
-                "topics": [
-                    {
-                        "title": "Unstructured Response",
-                        "description": answer,
-                        "type": "research",
-                    }
-                ]
-            }
+        # Default (All Types): force exactly 5 research + 5 capstone
+        if normalized_type is None:
+            research = await _generate_topics_json(5, "research")
+            capstone = await _generate_topics_json(5, "capstone")
+            mixed = _interleave(research, capstone)
+            return {"topics": mixed[:10]}
 
-        return topics
+        # Filtered trending: honor limit with minimum 6
+        n = _clamp_limit(limit, 10)
+        topics = await _generate_topics_json(n, normalized_type)
+        return {"topics": topics}
+
     except Exception as e:
-        return {
-            "error": _humanize_ollama_error(e),
-            "details": str(e),
-            "topics": [],
-        }
-
+        return {"error": str(e), "topics": []}
 
 # -------------------------------
 # SEARCH TOPICS
 # -------------------------------
 @app.post("/topicspark/search")
-async def search_topicspark(request: Request):
+async def search_topics(request: Request):
     body = await request.json()
-    query = (body.get("query", "") or "").strip()
+    query = body.get("query", "").strip()
+
+    requested_type = _normalize_topic_type(body.get("type"))
+    limit = _clamp_limit(body.get("limit"), 10)
 
     if not query:
         return {"topics": []}
 
-    prompt = f"""
-You generate academic capstone and research topic ideas.
-
-Generate 10 topics related to: {query!r}.
-Return ONLY valid JSON (no markdown/code fences) and no extra text.
-Ensure proper commas between items.
-You may return either:
-- a JSON object: {{\"topics\": [ ... ]}}
-- OR a raw JSON array: [ ... ]
-
-Each topic must include:
-- title (string)
-- description (string, 1-2 sentences)
-- type (either \"research\" or \"capstone\")
-""".strip()
-
     try:
-        answer = await _generate_with_retry(prompt)
-        parsed = _extract_json_payload(answer)
-        topics = force_topic_array(parsed if parsed is not None else [])
+        # If user selected a filter (capstone/research), ONLY return that type.
+        if requested_type in {"research", "capstone"}:
+            topics = await _generate_topics_json(limit, requested_type, query=query)
+            return {"topics": topics}
 
-        if not topics.get("topics"):
-            return {
-                "topics": [
-                    {
-                        "title": "Unstructured Response",
-                        "description": answer,
-                        "type": "research",
-                    }
-                ]
-            }
+        # No filter: return a mix, still respecting minimum 6.
+        # Split evenly; if odd, give the extra to research.
+        research_n = (limit + 1) // 2
+        capstone_n = limit // 2
 
-        return topics
+        research = await _generate_topics_json(research_n, "research", query=query)
+        capstone = await _generate_topics_json(capstone_n, "capstone", query=query)
+        mixed = _interleave(research, capstone)
+        return {"topics": mixed[:limit]}
+
     except Exception as e:
-        return {
-            "error": _humanize_ollama_error(e),
-            "details": str(e),
-            "topics": [],
-        }
+        return {"error": str(e), "topics": []}
 
-
+# -------------------------------
+# RUN
+# -------------------------------
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run(app, host=API_HOST, port=API_PORT)

@@ -1,25 +1,64 @@
 const express = require("express");
 const cors = require("cors");
 const admin = require("firebase-admin");
+const fs = require("fs");
+const path = require("path");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 // Initialize Firebase Admin SDK
-// You need to download your service account key from Firebase Console
-// Project Settings > Service Accounts > Generate New Private Key
-const serviceAccount = require("./futurehive-capstoneproject-firebase-adminsdk-fbsvc-592d26b4e3.json");
+// Provide credentials via one of:
+// - Backend/firebase-service-account.json (local dev)
+// - FIREBASE_SERVICE_ACCOUNT_PATH env var
+// - GOOGLE_APPLICATION_CREDENTIALS env var
+let db = null;
+let firebaseInitError = null;
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-});
+try {
+  const serviceAccountPath =
+    process.env.FIREBASE_SERVICE_ACCOUNT_PATH ||
+    process.env.GOOGLE_APPLICATION_CREDENTIALS ||
+    path.join(__dirname, "firebase-service-account.json");
 
-const db = admin.firestore();
+  if (!fs.existsSync(serviceAccountPath)) {
+    throw new Error(
+      `Missing Firebase service account JSON. Expected at: ${serviceAccountPath}. ` +
+        "Download it from Firebase Console → Project Settings → Service Accounts → Generate new private key, " +
+        "then save it as Backend/firebase-service-account.json (or set FIREBASE_SERVICE_ACCOUNT_PATH)."
+    );
+  }
+
+  const serviceAccount = require(serviceAccountPath);
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
+  db = admin.firestore();
+} catch (err) {
+  firebaseInitError = err;
+  console.error("\n❌ Firebase Admin SDK failed to initialize:");
+  console.error(err && err.message ? err.message : err);
+  console.error(
+    "\nThe server will still start, but /api/* endpoints will return 503 until credentials are configured.\n"
+  );
+}
+
+const requireFirestore = (req, res, next) => {
+  if (db) return next();
+  return res.status(503).json({
+    success: false,
+    error:
+      firebaseInitError && firebaseInitError.message
+        ? firebaseInitError.message
+        : "Firebase is not configured. Set FIREBASE_SERVICE_ACCOUNT_PATH or add Backend/firebase-service-account.json",
+  });
+};
 
 
 // GET all users with pagination and search
 app.get("/api/users", async (req, res) => {
+  if (!db) return requireFirestore(req, res, () => {});
   try {
     const { page = 1, limit = 5, search = "" } = req.query;
     const pageNum = parseInt(page);
@@ -72,6 +111,7 @@ app.get("/api/users", async (req, res) => {
 
 // GET single user by ID
 app.get("/api/users/:id", async (req, res) => {
+  if (!db) return requireFirestore(req, res, () => {});
   try {
     const doc = await db.collection("users").doc(req.params.id).get();
 
@@ -100,6 +140,7 @@ app.get("/api/users/:id", async (req, res) => {
 
 // POST - Create new user
 app.post("/api/users", async (req, res) => {
+  if (!db) return requireFirestore(req, res, () => {});
   try {
     const { name, email, role, status } = req.body;
 
@@ -141,6 +182,7 @@ app.post("/api/users", async (req, res) => {
 
 // PUT - Update user
 app.put("/api/users/:id", async (req, res) => {
+  if (!db) return requireFirestore(req, res, () => {});
   try {
     const { name, email, role, status } = req.body;
 
@@ -184,6 +226,7 @@ app.put("/api/users/:id", async (req, res) => {
 
 // DELETE - Delete user
 app.delete("/api/users/:id", async (req, res) => {
+  if (!db) return requireFirestore(req, res, () => {});
   try {
     // Check if user exists
     const userDoc = await db.collection("users").doc(req.params.id).get();
@@ -212,6 +255,7 @@ app.delete("/api/users/:id", async (req, res) => {
 
 // GET dashboard statistics
 app.get("/api/dashboard/stats", async (req, res) => {
+  if (!db) return requireFirestore(req, res, () => {});
   try {
     const [usersSnapshot, researchSnapshot] = await Promise.all([
       db.collection("users").get(),

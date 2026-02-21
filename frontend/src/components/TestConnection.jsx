@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { userApi, researchApi, dashboardApi } from "../api/adminApi";
 
+const ADMIN_SERVER_URL =
+  import.meta.env.VITE_ADMIN_SERVER_URL || "http://localhost:5000";
+const FIREBASE_SERVER_URL =
+  import.meta.env.VITE_FIREBASE_SERVER_URL || "http://localhost:5001";
+
 const TestConnection = () => {
   const [status, setStatus] = useState("Testing connection...");
   const [stats, setStats] = useState(null);
@@ -13,26 +18,39 @@ const TestConnection = () => {
 
   const testConnection = async () => {
     try {
-      // Test 1: Health check
-      setStatus("Testing health check...");
-      const healthResponse = await fetch("http://localhost:5000/health");
-      const healthData = await healthResponse.json();
+      setStatus("Testing health checks...");
 
-      if (healthData.status === "healthy") {
-        setStatus("✅ Backend is connected!");
+      const [adminHealth, firebaseHealth] = await Promise.allSettled([
+        fetch(`${ADMIN_SERVER_URL}/health`).then((r) => r.json()),
+        fetch(`${FIREBASE_SERVER_URL}/health`).then((r) => r.json()),
+      ]);
 
-        // Test 2: Get dashboard stats
-        const statsData = await dashboardApi.getStats();
-        if (statsData.success) {
-          setStats(statsData.stats);
-        }
+      const adminOk =
+        adminHealth.status === "fulfilled" &&
+        adminHealth.value &&
+        adminHealth.value.status === "healthy";
+      const firebaseOk =
+        firebaseHealth.status === "fulfilled" &&
+        firebaseHealth.value &&
+        firebaseHealth.value.status === "OK";
 
-        // Test 3: Get users
-        const usersData = await userApi.getUsers("", 1, 5);
-        if (usersData.success) {
-          setUsers(usersData.users);
-        }
+      if (!adminOk && !firebaseOk) {
+        throw new Error(
+          "Both servers are unreachable. Start Flask admin_server.py (5000) and firebase_api_server.js (5001)."
+        );
       }
+
+      setStatus(
+        `✅ Connected (${adminOk ? "Admin" : ""}${adminOk && firebaseOk ? "+" : ""}${firebaseOk ? "Firebase" : ""})`
+      );
+
+      // Stats (from Firebase API)
+      const statsData = await dashboardApi.getStats();
+      if (statsData.success) setStats(statsData.stats);
+
+      // Users (from Firebase API)
+      const usersData = await userApi.getUsers("", 1, 5);
+      if (usersData.success) setUsers(usersData.users);
     } catch (err) {
       setError(err.message);
       setStatus("❌ Connection failed");
@@ -88,7 +106,7 @@ const TestConnection = () => {
                 <strong>Error:</strong> {error}
                 <div className="mt-2 text-sm">
                   Make sure the backend server is running at
-                  http://localhost:5000
+                  http://localhost:5000 and http://localhost:5001
                 </div>
               </div>
             )}
@@ -171,12 +189,11 @@ const TestConnection = () => {
           <div className="mt-6 p-4 bg-gray-50 rounded">
             <h3 className="font-semibold text-gray-700 mb-2">API Endpoints:</h3>
             <ul className="text-sm text-gray-600 space-y-1">
-              <li>• Base URL: http://localhost:5000</li>
-              <li>• Health: http://localhost:5000/health</li>
-              <li>• Admin API: http://localhost:5000/api/admin</li>
-              <li>• Users: http://localhost:5000/api/admin/users</li>
-              <li>• Research: http://localhost:5000/api/admin/research</li>
-              <li>• Stats: http://localhost:5000/api/admin/dashboard/stats</li>
+              <li>• Admin Health: http://localhost:5000/health</li>
+              <li>• Firebase Health: http://localhost:5001/health</li>
+              <li>• Users (Firebase): http://localhost:5001/api/users</li>
+              <li>• Stats (Firebase): http://localhost:5001/api/dashboard/stats</li>
+              <li>• Research (Flask): http://localhost:5000/api/admin/research</li>
             </ul>
           </div>
         </div>
