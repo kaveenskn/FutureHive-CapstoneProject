@@ -8,14 +8,11 @@ db = get_db()
 research_collection = db["Past_Research_projects"]
 capstone_collection = db["Capstone_projects"]
 
-# Helper to convert MongoDB documents to JSON
 def serialize(doc):
     doc["_id"] = str(doc["_id"])
     return doc
 
-# -----------------------------
-# Load ALL documents
-# -----------------------------
+
 @admin.route("/all", methods=["GET"])
 def get_all_papers():
     research = list(research_collection.find())
@@ -30,9 +27,7 @@ def get_all_papers():
     }), 200
 
 
-# -----------------------------
-# Add a New Paper
-# -----------------------------
+
 @admin.route("/add", methods=["POST"])
 def add_paper():
     data = request.json
@@ -44,9 +39,7 @@ def add_paper():
     return jsonify({"message": "Paper added", "id": str(result.inserted_id)}), 201
 
 
-# -----------------------------
-# Update Existing Paper
-# -----------------------------
+
 @admin.route("/update/<paper_id>", methods=["PUT"])
 def update_paper(paper_id):
     data = request.json
@@ -65,9 +58,7 @@ def update_paper(paper_id):
     return jsonify({"message": "Paper updated"}), 200
 
 
-# -----------------------------
-# Delete Paper
-# -----------------------------
+
 @admin.route("/delete/<paper_id>", methods=["DELETE"])
 def delete_paper(paper_id):
     paper_type = request.args.get("type", "research")

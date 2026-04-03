@@ -33,11 +33,11 @@ def health_check():
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("🚀 Research Admin Panel API Server Starting...")
+    print(" Research Admin Panel API Server Starting...")
     print("=" * 60)
-    print("📍 Server URL: http://localhost:5000")
-    print("📚 Admin API: http://localhost:5000/api/admin")
-    print("💚 Health Check: http://localhost:5000/health")
+    print(" Server URL: http://localhost:5000")
+    print(" Admin API: http://localhost:5000/api/admin")
+    print(" Health Check: http://localhost:5000/health")
     print("=" * 60)
     print("\nAvailable Endpoints:")
     print("  - GET  /api/admin/users")
@@ -47,6 +47,6 @@ if __name__ == "__main__":
     print("  - POST /api/admin/research/bulk-upload")
     print("  - GET  /api/admin/dashboard/stats")
     print("=" * 60)
-    print("\n✅ Server is ready! Press Ctrl+C to stop.\n")
+    print("\n Server is ready! Press Ctrl+C to stop.\n")
     
     app.run(host='0.0.0.0', port=5000, debug=True)
